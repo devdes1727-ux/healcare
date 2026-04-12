@@ -6,6 +6,6 @@ const auth = require('../middleware/auth');
 router.post('/', auth, slotController.createSlot);
 router.get('/my', auth, slotController.getMySlots);
 router.delete('/:id', auth, slotController.deleteSlot);
-router.get('/doctor/:doctorId', auth, slotController.getSlotsByDoctorId);
+router.get('/doctor/:doctorId', slotController.getSlotsByDoctorId);
 
 module.exports = router;

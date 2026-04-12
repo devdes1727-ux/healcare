@@ -1,137 +1,223 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+
+interface MenuItem {
+  label: string;
+  icon: string;
+  route: string;
+  title: string;
+}
 
 @Component({
   selector: 'app-patient-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="dashboard-layout">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <h3>Patient Portal</h3>
-        </div>
-        <nav class="sidebar-nav">
-          <a routerLink="./" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
-            <i class="icon-dashboard"></i> Overview
-          </a>
-          <a routerLink="doctors" routerLinkActive="active" class="nav-item">
-            <i class="icon-search"></i> Find Doctors
-          </a>
-          <a routerLink="appointments" routerLinkActive="active" class="nav-item">
-            <i class="icon-calendar"></i> My Appointments
-          </a>
-          <a routerLink="/profile-settings" routerLinkActive="active" class="nav-item">
-            <i class="icon-settings"></i> Settings
-          </a>
-        </nav>
-      </aside>
+<div class="dashboard">
 
-      <!-- Main Content Area -->
-      <main class="dashboard-content">
-        <div class="dashboard-header">
-          <h2>{{ getPageTitle() }}</h2>
-        </div>
-        <div class="content-scroll">
-          <router-outlet></router-outlet>
-        </div>
-      </main>
-    </div>
-  `,
-  styles: [`
-    .dashboard-layout {
-      display: flex;
-      height: calc(100vh - 72px); /* Assuming navbar is 72px */
-      background-color: var(--bg-secondary);
-    }
-
-    .sidebar {
-      width: 260px;
-      background-color: var(--bg-card);
-      border-right: 1px solid var(--border-light);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .sidebar-header {
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--border-light);
-    }
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
     
-    .sidebar-header h3 {
-      margin: 0;
-      color: var(--primary-color);
-    }
+    <div class="brand">
+      <div class="logo">🏥</div>
+      <div>
+        <h3>Patient Portal</h3>
+        <small>Health Dashboard</small>
+      </div>
+    </div>
 
-    .sidebar-nav {
-      padding: 1rem 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
+    <nav class="menu">
+      <a
+        *ngFor="let item of menuItems"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.route === './' }"
+        class="menu-item"
+      >
+        <span class="icon">{{ item.icon }}</span>
+        {{ item.label }}
+      </a>
+    </nav>
 
-    .nav-item {
-      padding: 0.75rem 1.5rem;
-      color: var(--text-muted);
-      text-decoration: none;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      transition: all 0.2s;
-      border-left: 3px solid transparent;
-    }
+  </aside>
 
-    .nav-item:hover {
-      background-color: rgba(37, 99, 235, 0.05);
-      color: var(--primary-color);
-    }
+  <!-- MAIN -->
+  <main class="main">
 
-    .nav-item.active {
-      background-color: rgba(37, 99, 235, 0.1);
-      color: var(--primary-color);
-      border-left-color: var(--primary-color);
-    }
+    <section class="content">
+      <router-outlet></router-outlet>
+    </section>
 
-    .dashboard-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+  </main>
 
-    .dashboard-header {
-      padding: 1.5rem 2rem;
-      background-color: var(--bg-main);
-      border-bottom: 1px solid var(--border-light);
-    }
+</div>
+`,
 
-    .dashboard-header h2 {
-      margin: 0;
-      font-size: 1.5rem;
-      color: var(--text-main);
-    }
+  styles: [`
+.dashboard{
+  display:flex;
+  height:100vh;
+  background:#f6f7fb;
+}
 
-    .content-scroll {
-      flex: 1;
-      overflow-y: auto;
-      padding: 2rem;
-    }
+/* SIDEBAR */
+.sidebar{
+  width:260px;
+  background:#fff;
+  border-right:1px solid #eee;
+  display:flex;
+  flex-direction:column;
+}
 
-    @media (max-width: 768px) {
-      .sidebar { display: none; }
-    }
+.brand{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:20px;
+  border-bottom:1px solid #eee;
+}
+
+.logo{
+  width:42px;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#4f46e5;
+  color:#fff;
+  border-radius:10px;
+  font-size:18px;
+}
+
+.brand h3{
+  margin:0;
+  font-size:16px;
+}
+
+.brand small{
+  color:#6b7280;
+}
+
+/* MENU */
+.menu{
+  display:flex;
+  flex-direction:column;
+  padding:10px;
+  gap:6px;
+}
+
+.menu-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-radius:10px;
+  text-decoration:none;
+  color:#6b7280;
+  font-weight:500;
+  transition:0.2s;
+}
+
+.menu-item:hover{
+  background:#f3f4f6;
+  color:#111;
+}
+
+.menu-item.active{
+  background:#4f46e5;
+  color:#fff;
+}
+
+/* MAIN */
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TOPBAR */
+.topbar{
+  background:#fff;
+  padding:18px 24px;
+  border-bottom:1px solid #eee;
+}
+
+.topbar h2{
+  margin:0;
+  font-size:20px;
+}
+
+.topbar p{
+  margin:4px 0 0;
+  color:#6b7280;
+  font-size:13px;
+}
+
+/* CONTENT */
+.content{
+  padding:20px;
+  overflow:auto;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sidebar{
+    display:none;
+  }
+}
   `]
 })
 export class PatientDashboardComponent {
-  constructor(private router: Router) {}
 
-  getPageTitle(): string {
-    const url = this.router.url;
-    if (url.includes('doctors')) return 'Find & Book Doctors';
-    if (url.includes('appointments')) return 'My Appointments';
-    return 'Patient Overview';
+  pageTitle = 'Patient Overview';
+
+  menuItems: MenuItem[] = [
+    {
+      label: 'Overview',
+      icon: '📊',
+      route: './',
+      title: 'Patient Overview'
+    },
+    {
+      label: 'Find Doctors',
+      icon: '🩺',
+      route: 'doctors',
+      title: 'Find & Book Doctors'
+    },
+    {
+      label: 'Appointments',
+      icon: '📅',
+      route: 'appointments',
+      title: 'My Appointments'
+    },
+    {
+      label: 'Settings',
+      icon: '⚙️',
+      route: 'settings',
+      title: 'Settings'
+    }
+  ];
+
+  constructor(private router: Router) {
+    // CLEAN dynamic title (NO hardcoding with URL checks)
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.updateTitle();
+      });
+
+    this.updateTitle();
+  }
+
+  private updateTitle() {
+    const currentUrl = this.router.url;
+
+    const match = this.menuItems.find(item =>
+      currentUrl.includes(item.route.replace('./', ''))
+    );
+
+    this.pageTitle = match?.title || 'Patient Dashboard';
   }
 }

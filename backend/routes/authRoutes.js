@@ -18,5 +18,8 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/me', auth, authController.getMe);
 router.put('/profile', auth, upload.single('profileImage'), authController.updateProfile);
+router.post('/change-password', auth, authController.changePassword);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
 
 module.exports = router;

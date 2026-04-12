@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
     const payload = { user: { id: user.id || user.ID, role: userRole } };
     jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '5h' }, (err, token) => {
       if (err) throw err;
-      res.json({ token, role: userRole, name: userName, email: user.email });
+      res.json({ token, role: userRole, name: userName, email: user.email, profile_image: user.profile_image });
     });
   } catch (err) {
     console.error(err);
@@ -63,7 +63,7 @@ exports.login = async (req, res) => {
     const payload = { user: { id: user.id || user.ID, role: userRole } };
     jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '5h' }, (err, token) => {
       if (err) throw err;
-      res.json({ token, role: userRole, name: userName, email: user.email });
+      res.json({ token, role: userRole, name: userName, email: user.email, profile_image: user.profile_image });
     });
   } catch (err) {
     console.error(err);
@@ -109,11 +109,39 @@ exports.getMe = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phone, age, bloodGroup, gender, address, category, contactNumber, receptionContact, showContactPreference, clinicName, clinicLocation, specialization, experienceYears, consultationFee } = req.body;
+    const { 
+      name, 
+      phone, phoneNumber,
+      age, 
+      bloodGroup, blood_group,
+      gender, 
+      address, 
+      category, 
+      contactNumber, contact_number,
+      receptionContact, reception_contact,
+      showContactPreference, show_contact_preference,
+      clinicName, clinic_name,
+      clinicLocation, clinic_location,
+      specialization, 
+      experienceYears, experience_years,
+      consultationFee, consultation_fee
+    } = req.body;
+
+    const finalPhone = phone || phoneNumber;
+    const finalBloodGroup = bloodGroup || blood_group;
+    const finalContact = contactNumber || contact_number;
+    const finalReception = receptionContact || reception_contact;
+    const finalClinicName = clinicName || clinic_name;
+    const finalClinicLocation = clinicLocation || clinic_location;
+    const finalExperience = experienceYears || experience_years;
+    const finalFee = consultationFee || consultation_fee;
+
     let profileImage = null;
     if (req.file) {
       profileImage = 'http://localhost:5000/uploads/' + req.file.filename;
     }
+    console.log('Update Profile - File:', req.file);
+    console.log('Update Profile - Generated Path:', profileImage);
     
     const pool = await poolPromise;
     const transaction = new mssql.Transaction(pool);
@@ -142,19 +170,19 @@ exports.updateProfile = async (req, res) => {
         if (patientCheck.recordset.length > 0) {
           await transaction.request()
             .input('userId', mssql.Int, req.user.id)
-            .input('phone', mssql.NVarChar, phone || '')
+            .input('phone', mssql.NVarChar, finalPhone || '')
             .input('gender', mssql.NVarChar, gender || '')
             .input('age', mssql.Int, parseInt(age) || null)
-            .input('bloodGroup', mssql.NVarChar, bloodGroup || '')
+            .input('bloodGroup', mssql.NVarChar, finalBloodGroup || '')
             .input('address', mssql.NVarChar, address || '')
             .query(`UPDATE Patients SET phone_number = @phone, gender = @gender, age = @age, blood_group = @bloodGroup, address = @address WHERE user_id = @userId`);
         } else {
           await transaction.request()
             .input('userId', mssql.Int, req.user.id)
-            .input('phone', mssql.NVarChar, phone || '')
+            .input('phone', mssql.NVarChar, finalPhone || '')
             .input('gender', mssql.NVarChar, gender || '')
             .input('age', mssql.Int, parseInt(age) || null)
-            .input('bloodGroup', mssql.NVarChar, bloodGroup || '')
+            .input('bloodGroup', mssql.NVarChar, finalBloodGroup || '')
             .input('address', mssql.NVarChar, address || '')
             .query(`INSERT INTO Patients (user_id, phone_number, gender, age, blood_group, address) VALUES (@userId, @phone, @gender, @age, @bloodGroup, @address)`);
         }
@@ -167,39 +195,39 @@ exports.updateProfile = async (req, res) => {
           await transaction.request()
             .input('userId', mssql.Int, req.user.id)
             .input('category', mssql.NVarChar, category || '')
-            .input('contactNumber', mssql.NVarChar, contactNumber || '')
-            .input('receptionContact', mssql.NVarChar, receptionContact || '')
-            .input('showContactPreference', mssql.NVarChar, showContactPreference || 'Personal')
-            .input('clinicName', mssql.NVarChar, clinicName || '')
-            .input('clinicLocation', mssql.NVarChar, clinicLocation || '')
-            .input('specialization', mssql.NVarChar, specialization || '')
-            .input('experienceYears', mssql.Int, parseInt(experienceYears) || 0)
-            .input('consultationFee', mssql.Decimal(10, 2), parseFloat(consultationFee) || 0)
+            .input('contactNumber', mssql.NVarChar, finalContact || '')
+            .input('receptionContact', mssql.NVarChar, finalReception || '')
+            .input('showPreference', mssql.NVarChar, showContactPreference || show_contact_preference || 'Personal')
+            .input('clinicName', mssql.NVarChar, finalClinicName || '')
+            .input('clinicLocation', mssql.NVarChar, finalClinicLocation || '')
+            .input('spec', mssql.NVarChar, specialization || '')
+            .input('experience', mssql.Int, parseInt(finalExperience) || 0)
+            .input('fee', mssql.Decimal(10, 2), parseFloat(finalFee) || 0)
             .query(`UPDATE Doctors SET 
                 category = @category, 
                 contact_number = @contactNumber, 
                 reception_contact = @receptionContact, 
-                show_contact_preference = @showContactPreference,
+                show_contact_preference = @showPreference,
                 clinic_name = @clinicName,
                 clinic_location = @clinicLocation,
-                specialization = @specialization,
-                experience_years = @experienceYears,
-                consultation_fee = @consultationFee
+                specialization = @spec,
+                experience_years = @experience,
+                consultation_fee = @fee
                 WHERE user_id = @userId`);
         } else {
           await transaction.request()
             .input('userId', mssql.Int, req.user.id)
             .input('category', mssql.NVarChar, category || '')
-            .input('contactNumber', mssql.NVarChar, contactNumber || '')
-            .input('receptionContact', mssql.NVarChar, receptionContact || '')
-            .input('showContactPreference', mssql.NVarChar, showContactPreference || 'Personal')
-            .input('clinicName', mssql.NVarChar, clinicName || '')
-            .input('clinicLocation', mssql.NVarChar, clinicLocation || '')
-            .input('specialization', mssql.NVarChar, specialization || '')
-            .input('experienceYears', mssql.Int, parseInt(experienceYears) || 0)
-            .input('consultationFee', mssql.Decimal(10, 2), parseFloat(consultationFee) || 0)
+            .input('contactNumber', mssql.NVarChar, finalContact || '')
+            .input('receptionContact', mssql.NVarChar, finalReception || '')
+            .input('showPreference', mssql.NVarChar, showContactPreference || show_contact_preference || 'Personal')
+            .input('clinicName', mssql.NVarChar, finalClinicName || '')
+            .input('clinicLocation', mssql.NVarChar, finalClinicLocation || '')
+            .input('spec', mssql.NVarChar, specialization || '')
+            .input('experience', mssql.Int, parseInt(finalExperience) || 0)
+            .input('fee', mssql.Decimal(10, 2), parseFloat(finalFee) || 0)
             .query(`INSERT INTO Doctors (user_id, category, contact_number, reception_contact, show_contact_preference, clinic_name, clinic_location, specialization, experience_years, consultation_fee) 
-                    VALUES (@userId, @category, @contactNumber, @receptionContact, @showContactPreference, @clinicName, @clinicLocation, @specialization, @experienceYears, @consultationFee)`);
+                    VALUES (@userId, @category, @contactNumber, @receptionContact, @showPreference, @clinicName, @clinicLocation, @spec, @experience, @fee)`);
         }
       }
 
@@ -216,5 +244,104 @@ exports.updateProfile = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Server Error updating profile');
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const pool = await poolPromise;
+    
+    const userResult = await pool.request()
+      .input('email', mssql.NVarChar, email)
+      .query('SELECT id FROM Users WHERE email = @email');
+      
+    if (userResult.recordset.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const userId = userResult.recordset[0].id;
+    const token = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const expiry = new Date(Date.now() + 3600000); // 1 hour
+    
+    await pool.request()
+      .input('id', mssql.Int, userId)
+      .input('token', mssql.NVarChar, token)
+      .input('expiry', mssql.DateTime, expiry)
+      .query('UPDATE Users SET reset_token = @token, reset_token_expiry = @expiry WHERE id = @id');
+      
+    // In production, send email here. For demo, return token.
+    res.json({ message: 'Reset token generated', token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    const pool = await poolPromise;
+    
+    const userResult = await pool.request()
+      .input('token', mssql.NVarChar, token)
+      .query('SELECT id, reset_token_expiry FROM Users WHERE reset_token = @token');
+      
+    if (userResult.recordset.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+    
+    const user = userResult.recordset[0];
+    if (new Date() > new Date(user.reset_token_expiry)) {
+      return res.status(400).json({ message: 'Token has expired' });
+    }
+    
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    await pool.request()
+      .input('id', mssql.Int, user.id)
+      .input('password', mssql.NVarChar, hashedPassword)
+      .query('UPDATE Users SET password = @password, reset_token = NULL, reset_token_expiry = NULL WHERE id = @id');
+      
+    res.json({ message: 'Password reset successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const pool = await poolPromise;
+    
+    const userResult = await pool.request()
+      .input('id', mssql.Int, req.user.id)
+      .query('SELECT password FROM Users WHERE id = @id');
+      
+    if (userResult.recordset.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const user = userResult.recordset[0];
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect current password' });
+    }
+    
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    await pool.request()
+      .input('id', mssql.Int, req.user.id)
+      .input('password', mssql.NVarChar, hashedPassword)
+      .query('UPDATE Users SET password = @password WHERE id = @id');
+      
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
   }
 };

@@ -20,17 +20,41 @@ export interface Patient {
 }
 
 export interface Appointment {
+
   id: number;
+
   doctor_id: number;
+
   patient_id: number;
+
   appointment_date: string;
-  appointment_time: string;
+
+  start_time: string;   // ✅ NEW
+  end_time: string;     // ✅ NEW
+
   consultation_type: 'online' | 'offline';
-  status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'completed';
+
+  status:
+  | 'pending'
+  | 'confirmed'
+  | 'rejected'
+  | 'cancelled_by_doctor'
+  | 'cancelled_by_patient'
+  | 'completed'
+  | 'reschedule_requested';
+
   payment_status: 'pending' | 'paid';
+
+  meeting_link?: string;
+
   doctorName?: string;
+
   patientName?: string;
+
   specialization?: string;
+
+  patientImage?: string;
+
 }
 
 export interface Slot {

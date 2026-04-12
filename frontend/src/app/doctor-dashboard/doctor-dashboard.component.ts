@@ -27,9 +27,6 @@ import { AuthService } from '../services/auth.service';
           <a routerLink="schedule" routerLinkActive="active" class="nav-item">
             <i class="icon-calendar"></i> Schedule Manager
           </a>
-          <a routerLink="doctors" routerLinkActive="active" class="nav-item">
-            <i class="icon-search"></i> Find Doctors
-          </a>
         </nav>
       </aside>
 
@@ -132,7 +129,7 @@ import { AuthService } from '../services/auth.service';
   `]
 })
 export class DoctorDashboardComponent {
-  constructor(private router: Router) {}
+  constructor(private router: Router) { }
 
   getPageTitle(): string {
     const url = this.router.url;

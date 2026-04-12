@@ -1,6 +1,8 @@
 import {
   Component,
-  OnInit
+  OnInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef
 } from '@angular/core';
 
 import {
@@ -31,30 +33,42 @@ import {
     FormsModule
   ],
 
+  changeDetection: ChangeDetectionStrategy.OnPush,
+
   template: `
 
-<div class="wrapper">
+<div class="page-container">
 
 <h2 class="page-title">
 My Appointments
 </h2>
 
 
+<!-- LOADING -->
+
 <div *ngIf="loading" class="loading">
 Loading appointments...
 </div>
 
 
-<div *ngIf="!loading && displayedAppts.length===0"
+<!-- EMPTY STATE -->
+
+<div
+*ngIf="!loading && displayedAppts.length===0"
 class="empty">
+
 No appointments booked yet
+
 </div>
 
 
+<!-- APPOINTMENT GRID -->
+
+<div class="appointment-grid">
+
 <div
-*ngFor="let apt of displayedAppts"
-class="appointment-card"
->
+*ngFor="let apt of displayedAppts; trackBy: trackByApt"
+class="appointment-card">
 
 <div class="card-header">
 
@@ -73,9 +87,10 @@ Dr {{apt.doctorName}}
 
 <span
 class="status-badge"
-[ngClass]="apt.status"
->
+[ngClass]="apt.status">
+
 {{apt.status}}
+
 </span>
 
 </div>
@@ -89,7 +104,7 @@ class="status-badge"
 </div>
 
 <div class="info">
-🕒 {{apt.appointment_time}}
+🕒 {{apt.start_time + " - " + apt.end_time}}
 </div>
 
 <div class="info">
@@ -106,44 +121,48 @@ class="status-badge"
 
 <div class="card-actions">
 
-
 <button
 *ngIf="showJoinBtn(apt)"
 class="btn primary"
-(click)="joinCall(apt)"
->
+(click)="joinCall(apt)">
+
 Join Call
+
 </button>
 
 
 <button
 *ngIf="apt.status==='confirmed'"
 class="btn outline"
-(click)="openReschedule(apt)"
->
+(click)="openReschedule(apt)">
+
 Reschedule
+
 </button>
 
 
 <button
 *ngIf="apt.status==='confirmed'"
 class="btn danger"
-(click)="confirmCancel(apt)"
->
+(click)="confirmCancel(apt)">
+
 Cancel
+
 </button>
 
-
 </div>
 
 </div>
 
+</div>
 
+
+
+<!-- CANCEL MODAL -->
 
 <div
 class="modal"
-*ngIf="activeModal==='cancel'"
->
+*ngIf="activeModal==='cancel'">
 
 <div class="modal-box">
 
@@ -160,17 +179,19 @@ Are you sure you want to cancel?
 
 <button
 class="btn danger"
-(click)="executeCancel()"
->
+(click)="executeCancel()">
+
 Yes Cancel
+
 </button>
 
 
 <button
 class="btn outline"
-(click)="closeModal()"
->
+(click)="closeModal()">
+
 Close
+
 </button>
 
 </div>
@@ -181,49 +202,52 @@ Close
 
 
 
+<!-- RESCHEDULE MODAL -->
+
 <div
 class="modal"
-*ngIf="activeModal==='reschedule'"
->
+*ngIf="activeModal==='reschedule'">
 
 <div class="modal-box">
 
 <h3>
-Reschedule Appointment
+Request Reschedule
 </h3>
 
+<p class="hint">
+Select new preferred slot
+</p>
 
 <input
 type="date"
 [(ngModel)]="newDate"
-class="input"
-/>
+class="input"/>
 
 
 <input
 type="time"
 [(ngModel)]="newTime"
-class="input"
-/>
+class="input"/>
 
 
 <div class="modal-actions">
 
 <button
 class="btn primary"
-(click)="executeReschedule()"
->
-Save
+(click)="executeReschedule()">
+
+Send Request
+
 </button>
 
 
 <button
 class="btn outline"
-(click)="closeModal()"
->
-Close
-</button>
+(click)="closeModal()">
 
+Cancel
+
+</button>
 
 </div>
 
@@ -237,32 +261,55 @@ Close
 
 <style>
 
-.wrapper{
-max-width:900px;
+.page-container{
+max-width:1000px;
 margin:auto;
-padding:20px;
+padding:30px 20px 60px;
 }
+
 
 .page-title{
 font-size:28px;
 font-weight:600;
-margin-bottom:20px;
+margin-bottom:25px;
 }
+
 
 .loading,
 .empty{
 text-align:center;
-margin-top:50px;
+margin-top:40px;
 font-size:18px;
+color:#777;
 }
+
+
+/* GRID LAYOUT FIX */
+
+.appointment-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+gap:20px;
+}
+
+
+/* CARD */
 
 .appointment-card{
 background:white;
 border-radius:14px;
 padding:18px;
-margin-bottom:18px;
 box-shadow:0 3px 12px rgba(0,0,0,0.08);
+transition:.2s;
 }
+
+
+.appointment-card:hover{
+transform:translateY(-3px);
+}
+
+
+/* HEADER */
 
 .card-header{
 display:flex;
@@ -270,21 +317,29 @@ justify-content:space-between;
 align-items:center;
 }
 
+
 .speciality{
 color:#666;
 font-size:14px;
 }
 
+
+/* BODY */
+
 .card-body{
 display:grid;
-grid-template-columns:repeat(2,1fr);
+grid-template-columns:1fr 1fr;
 gap:8px;
-margin-top:10px;
+margin-top:12px;
 }
+
 
 .info{
 font-size:15px;
 }
+
+
+/* ACTION BUTTONS */
 
 .card-actions{
 margin-top:15px;
@@ -293,6 +348,9 @@ gap:10px;
 flex-wrap:wrap;
 }
 
+
+/* STATUS BADGE */
+
 .status-badge{
 padding:6px 14px;
 border-radius:20px;
@@ -300,42 +358,55 @@ font-size:13px;
 text-transform:capitalize;
 }
 
+
 .status-badge.confirmed{
 background:#e6f7ef;
 color:#12a150;
 }
+
 
 .status-badge.pending{
 background:#fff4e5;
 color:#e28b00;
 }
 
+
 .status-badge.cancelled_by_patient{
 background:#ffe6e6;
 color:#cc0000;
 }
+
+
+/* BUTTONS */
 
 .btn{
 padding:8px 14px;
 border-radius:8px;
 cursor:pointer;
 border:none;
+font-size:14px;
 }
+
 
 .btn.primary{
 background:#1976d2;
 color:white;
 }
 
+
 .btn.outline{
 border:1px solid #ccc;
 background:white;
 }
 
+
 .btn.danger{
 background:#e53935;
 color:white;
 }
+
+
+/* MODAL */
 
 .modal{
 position:fixed;
@@ -347,7 +418,9 @@ background:rgba(0,0,0,0.4);
 display:flex;
 align-items:center;
 justify-content:center;
+z-index:1000;
 }
+
 
 .modal-box{
 background:white;
@@ -356,16 +429,25 @@ border-radius:14px;
 width:320px;
 }
 
+
 .modal-actions{
 margin-top:15px;
 display:flex;
 gap:10px;
 }
 
+
 .input{
 width:100%;
 padding:8px;
 margin-top:10px;
+}
+
+
+.hint{
+font-size:13px;
+color:#666;
+margin-bottom:10px;
 }
 
 </style>
@@ -376,33 +458,36 @@ margin-top:10px;
 
 export class MyAppointmentsComponent implements OnInit {
 
-  displayedAppts: any[] = [];
+  displayedAppts: any[] = []
 
-  loading = true;
+  loading = true
 
-  activeModal: any = null;
+  activeModal: any = null
 
-  selectedApt: any;
+  selectedApt: any
 
-  newDate = '';
+  newDate = ''
 
-  newTime = '';
+  newTime = ''
 
 
   constructor(
     private appointmentService: AppointmentService,
-    private toast: ToastService
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef
   ) { }
 
 
   ngOnInit() {
-    this.fetchAppointments();
+
+    this.fetchAppointments()
+
   }
 
 
   fetchAppointments() {
 
-    this.loading = true;
+    this.loading = true
 
     this.appointmentService
       .getPatientAppointments()
@@ -410,24 +495,28 @@ export class MyAppointmentsComponent implements OnInit {
 
         next: (res: any) => {
 
-          this.displayedAppts = res;
+          this.displayedAppts = [...res]
 
-          this.loading = false;
+          this.loading = false
+
+          this.cdr.markForCheck()
 
         },
 
         error: (err: any) => {
 
-          this.loading = false;
+          this.loading = false
 
           this.toast.error(
             err?.error?.message ||
             "Failed to load appointments"
-          );
+          )
+
+          this.cdr.markForCheck()
 
         }
 
-      });
+      })
 
   }
 
@@ -448,16 +537,18 @@ export class MyAppointmentsComponent implements OnInit {
     window.open(
       apt.meeting_link,
       "_blank"
-    );
+    )
 
   }
 
 
   confirmCancel(apt: any) {
 
-    this.selectedApt = apt;
+    this.selectedApt = apt
 
-    this.activeModal = 'cancel';
+    this.activeModal = 'cancel'
+
+    this.cdr.markForCheck()
 
   }
 
@@ -473,11 +564,13 @@ export class MyAppointmentsComponent implements OnInit {
 
         next: () => {
 
-          this.toast.success("Appointment cancelled");
+          this.toast.success(
+            "Appointment cancelled"
+          )
 
-          this.closeModal();
+          this.closeModal()
 
-          this.fetchAppointments();
+          this.fetchAppointments()
 
         },
 
@@ -486,20 +579,22 @@ export class MyAppointmentsComponent implements OnInit {
           this.toast.error(
             err?.error?.message ||
             "Cancel failed"
-          );
+          )
 
         }
 
-      });
+      })
 
   }
 
 
   openReschedule(apt: any) {
 
-    this.selectedApt = apt;
+    this.selectedApt = apt
 
-    this.activeModal = 'reschedule';
+    this.activeModal = 'reschedule'
+
+    this.cdr.markForCheck()
 
   }
 
@@ -508,9 +603,11 @@ export class MyAppointmentsComponent implements OnInit {
 
     if (!this.newDate || !this.newTime) {
 
-      this.toast.error("Select date & time");
+      this.toast.error(
+        "Select date & time"
+      )
 
-      return;
+      return
 
     }
 
@@ -526,11 +623,13 @@ export class MyAppointmentsComponent implements OnInit {
 
         next: () => {
 
-          this.toast.success("Appointment rescheduled");
+          this.toast.success(
+            "Reschedule request sent"
+          )
 
-          this.closeModal();
+          this.closeModal()
 
-          this.fetchAppointments();
+          this.fetchAppointments()
 
         },
 
@@ -538,25 +637,34 @@ export class MyAppointmentsComponent implements OnInit {
 
           this.toast.error(
             err?.error?.message ||
-            "Reschedule failed"
-          );
+            "Slot unavailable"
+          )
 
         }
 
-      });
+      })
 
   }
 
 
   closeModal() {
 
-    this.activeModal = null;
+    this.activeModal = null
 
-    this.selectedApt = null;
+    this.selectedApt = null
 
-    this.newDate = '';
+    this.newDate = ''
 
-    this.newTime = '';
+    this.newTime = ''
+
+    this.cdr.markForCheck()
+
+  }
+
+
+  trackByApt(index: number, apt: any) {
+
+    return apt.id
 
   }
 

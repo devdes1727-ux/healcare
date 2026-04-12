@@ -8,15 +8,21 @@
     <div class="nav-content">
       <div class="nav-links">
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
-        <a routerLink="/patient-dashboard/doctors" routerLinkActive="active">Find Doctors</a>
-        <!-- Using `#` for about for now as requested or can add routing later. -->
         <a href="#about" routerLinkActive="active">About</a>
       </div>
 
       <div class="nav-actions">
         <button class="theme-toggle" (click)="toggleTheme()" aria-label="Toggle dark mode">
-          <svg *ngIf="isDarkMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          <svg *ngIf="!isDarkMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg *ngIf="isDarkMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5" />
+            <path
+              d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          </svg>
+          <svg *ngIf="!isDarkMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
         </button>
 
         <ng-container *ngIf="!currentUser">
@@ -25,9 +31,12 @@
         </ng-container>
 
         <div *ngIf="currentUser" class="profile-container">
-          <button class="avatar-btn" (click)="toggleDropdown($event)" aria-haspopup="true" [attr.aria-expanded]="isDropdownOpen">
-            <div *ngIf="currentUser.profileImage" class="avatar-circle avatar-img" [style.backgroundImage]="'url(' + currentUser.profileImage + ')'"></div>
-            <span *ngIf="!currentUser.profileImage" class="avatar-circle">{{ getInitials(currentUser?.name || '') }}</span>
+          <button class="avatar-btn" (click)="toggleDropdown($event)" aria-haspopup="true"
+            [attr.aria-expanded]="isDropdownOpen">
+            <div *ngIf="currentUser.profileImage" class="avatar-circle avatar-img"
+              [style.backgroundImage]="'url(' + currentUser.profileImage + ')'"></div>
+            <span *ngIf="!currentUser.profileImage" class="avatar-circle">{{ getInitials(currentUser?.name || '')
+              }}</span>
           </button>
 
           <div class="dropdown-menu" [class.show]="isDropdownOpen" (click)="$event.stopPropagation()">
@@ -35,9 +44,9 @@
               <p class="user-name">{{ currentUser?.name || 'User' }}</p>
               <p class="user-role">{{ currentUser?.role | titlecase }}</p>
             </div>
-            
+
             <div class="divider"></div>
-            
+
             <ng-container *ngIf="currentUser.role === 'patient'">
               <a [routerLink]="getDashboardLink()" class="dropdown-item">
                 <i class="icon-dashboard"></i> Dashboard
@@ -83,255 +92,256 @@
 <app-toast></app-toast>
 
 <style>
-/* Navbar Base */
-.navbar {
-  height: 72px;
-  border-bottom: 1px solid var(--border-light);
-  position: sticky;
-  top: 0;
-  background: var(--bg-main);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  transition: all 0.3s ease;
-}
-
-.navbar-inner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-.logo {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.logo-icon {
-  background: var(--primary-color);
-  color: white;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.logo-text {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-main);
-  background: linear-gradient(135deg, var(--primary-color), #4dabf7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Nav Content */
-.nav-content {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-/* Nav links */
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-right: 1rem;
-}
-
-@media (max-width: 768px) {
-  .nav-links {
-    display: none;
+  /* Navbar Base */
+  .navbar {
+    height: 72px;
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    background: var(--bg-main);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
   }
-}
 
-.nav-links a {
-  color: var(--text-muted);
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: color 0.2s;
-  text-decoration: none;
-}
+  .navbar-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
 
-.nav-links a:hover, .nav-links a.active {
-  color: var(--primary-color);
-}
+  .logo {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
 
-/* Nav Actions */
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
+  .logo-icon {
+    background: var(--primary-color);
+    color: white;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
 
-/* Primary Button */
-.btn-book {
-  min-height: 44px;
-  padding: 0 1.5rem;
-  display: flex;
-  align-items: center;
-  border-radius: 50px;
-  font-weight: 600;
-  box-shadow: 0 4px 14px 0 rgba(0, 119, 255, 0.3);
-}
+  .logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    background: linear-gradient(135deg, var(--primary-color), #4dabf7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 
-.btn-ghost {
-  color: var(--text-main);
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-}
+  /* Nav Content */
+  .nav-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex: 1;
+    justify-content: flex-end;
+  }
 
-/* Profile Section */
-.profile-container {
-  position: relative;
-}
+  /* Nav links */
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-right: 1rem;
+  }
 
-.avatar-btn {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: transform 0.2s;
-}
+  @media (max-width: 768px) {
+    .nav-links {
+      display: none;
+    }
+  }
 
-.avatar-btn:hover {
-  transform: scale(1.05);
-}
+  .nav-links a {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+    text-decoration: none;
+  }
 
-.avatar-circle {
-  width: 40px;
-  height: 40px;
-  background: var(--primary-color);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-weight: 600;
-  font-size: 1.1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--primary-color);
+  }
 
-.avatar-img {
-  background-size: cover;
-  background-position: center;
-}
+  /* Nav Actions */
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
 
-/* Dropdown Menu */
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
-  width: 240px;
-  background: var(--bg-main);
-  border: 1px solid var(--border-light);
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  padding: 0.5rem;
-  visibility: hidden;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
+  /* Primary Button */
+  .btn-book {
+    min-height: 44px;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    border-radius: 50px;
+    font-weight: 600;
+    box-shadow: 0 4px 14px 0 rgba(0, 119, 255, 0.3);
+  }
 
-.dropdown-menu.show {
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(0);
-}
+  .btn-ghost {
+    color: var(--text-main);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+  }
 
-.dropdown-header {
-  padding: 0.75rem 1rem;
-}
+  /* Profile Section */
+  .profile-container {
+    position: relative;
+  }
 
-.user-name {
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 0;
-  font-size: 1rem;
-}
+  .avatar-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
 
-.user-role {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin: 0;
-  text-transform: capitalize;
-}
+  .avatar-btn:hover {
+    transform: scale(1.05);
+  }
 
-.divider {
-  height: 1px;
-  background: var(--border-light);
-  margin: 0.5rem 0;
-}
+  .avatar-circle {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 600;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: var(--text-main);
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 8px;
-  transition: background 0.2s;
-  width: 100%;
-  border: none;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-}
+  .avatar-img {
+    background-size: cover;
+    background-position: center;
+  }
 
-.dropdown-item:hover {
-  background: var(--bg-secondary);
-  color: var(--primary-color);
-}
+  /* Dropdown Menu */
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 240px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-.logout-item:hover {
-  background: #fff5f5;
-  color: #ff4d4f;
-}
+  .dropdown-menu.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+  }
 
-[data-theme="dark"] .logout-item:hover {
-  background: #2a1215;
-}
+  .dropdown-header {
+    padding: 0.75rem 1rem;
+  }
 
-/* Theme Toggle */
-.theme-toggle {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  color: var(--text-main);
-  cursor: pointer;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
+  .user-name {
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+    font-size: 1rem;
+  }
 
-.theme-toggle:hover {
-  background: var(--border-light);
-}
+  .user-role {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+    text-transform: capitalize;
+  }
 
-.main-content {
-  min-height: calc(100vh - 72px);
-}
+  .divider {
+    height: 1px;
+    background: var(--border-light);
+    margin: 0.5rem 0;
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-main);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background 0.2s;
+    width: 100%;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .dropdown-item:hover {
+    background: var(--bg-secondary);
+    color: var(--primary-color);
+  }
+
+  .logout-item:hover {
+    background: #fff5f5;
+    color: #ff4d4f;
+  }
+
+  [data-theme="dark"] .logout-item:hover {
+    background: #2a1215;
+  }
+
+  /* Theme Toggle */
+  .theme-toggle {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    color: var(--text-main);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .theme-toggle:hover {
+    background: var(--border-light);
+  }
+
+  .main-content {
+    min-height: calc(100vh - 72px);
+  }
 </style>

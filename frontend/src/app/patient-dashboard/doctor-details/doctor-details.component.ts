@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -15,319 +15,569 @@ declare var window: any;
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div *ngIf="loading" class="text-center py-20">
-      <div class="spinner mx-auto"></div>
-      <p class="text-muted mt-4">Loading doctor profile...</p>
-    </div>
-    
-    <div *ngIf="!loading && !doctor" class="empty-state text-center py-12 border rounded bg-card">
-      <div class="text-4xl mb-4">🩺</div>
-      <h3>Doctor not found</h3>
-      <p class="text-muted mb-6">The doctor profile you are looking for might have been moved or removed.</p>
-      <button class="btn btn-outline" (click)="goBack()">Go Back to Search</button>
-    </div>
+    <div class="page-root" *ngIf="doctor">
 
-    <div *ngIf="doctor" class="details-container animate-fade-in">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <!-- Left Col: Profile info -->
-        <div class="lg:col-span-1">
-          <div class="card p-8 text-center sticky-info">
-            <div class="avatar-container mx-auto mb-6">
+      <div *ngIf="loading" class="loading-screen">
+        <div class="loading-orb"></div>
+        <p class="loading-text">Loading availability…</p>
+      </div>
+
+      <div *ngIf="!loading" class="layout">
+
+        <!-- ── LEFT PANEL ── -->
+        <aside class="panel-left">
+
+          <!-- Hero -->
+          <div class="profile-hero">
+            <div class="avatar-wrap">
               <div class="avatar-img" *ngIf="doctor.profile_image" [style.backgroundImage]="'url(' + doctor.profile_image + ')'"></div>
-              <div class="avatar-init" *ngIf="!doctor.profile_image">{{ (doctor.name || 'D').charAt(0) }}</div>
-              <div class="verified-badge" *ngIf="doctor.is_verified" title="Verified Professional">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <div class="avatar-placeholder" *ngIf="!doctor.profile_image">{{ (doctor.name || 'D').charAt(0) }}</div>
+              <span class="badge-verified" *ngIf="doctor.is_verified">✓</span>
+            </div>
+            <h1 class="doc-name">Dr. {{ doctor.name }}</h1>
+            <p class="doc-spec">{{ doctor.specialization }}</p>
+
+            <div class="stats-row">
+              <div class="stat-pill">
+                <span class="stat-val">{{ doctor.experience_years }}+</span>
+                <span class="stat-lbl">Years</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-pill">
+                <span class="stat-val">4.9</span>
+                <span class="stat-lbl">Rating</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-pill">
+                <span class="stat-val">₹{{ doctor.consultation_fee }}</span>
+                <span class="stat-lbl">Fee</span>
               </div>
             </div>
-            
-            <h2 class="m-0 mb-1 text-2xl font-bold">Dr. {{ doctor.name }}</h2>
-            <p class="text-primary font-bold m-0 mb-6 px-4 py-1 bg-primary-alpha rounded-full inline-block">{{ doctor.specialization }}</p>
-
-            <div class="stats-row flex justify-around mb-8 border-y py-4">
-              <div class="stat-item">
-                <span class="stat-value">{{ doctor.experience_years }}+</span>
-                <span class="stat-label">Years Exp.</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{{ doctor.total_consultations || 450 }}+</span>
-                <span class="stat-label">Patients</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">4.9/5</span>
-                <span class="stat-label">Rating</span>
-              </div>
-            </div>
-
-            <div class="info-list text-left">
-              <div class="info-item mb-6">
-                <label>Clinic / Hospital</label>
-                <div class="value flex items-start gap-2">
-                  <span class="icon">🏥</span>
-                  <span>
-                    <strong>{{ doctor.clinic_name || 'HealCare Specialist Center' }}</strong><br>
-                    <small class="text-muted">{{ doctor.clinic_location }}</small>
-                  </span>
-                </div>
-              </div>
-
-              <div class="info-item mb-6">
-                <label>Consultation Fee</label>
-                <div class="value flex items-center gap-2">
-                  <span class="icon">💰</span>
-                  <span class="text-2xl font-bold text-green-600">\${{ doctor.consultation_fee }}</span>
-                  <span class="text-xs text-muted">Incl. GST</span>
-                </div>
-              </div>
-            </div>
-
-            <button class="btn btn-ghost w-full mt-4 text-primary font-bold" (click)="openReviews()">
-              View Other Patient Reviews &rarr;
-            </button>
           </div>
-        </div>
 
-        <!-- Right Col: Booking slots -->
-        <div class="lg:col-span-2">
-          <div class="card p-8">
-            <h3 class="m-0 mb-8 flex items-center gap-3">
-              <span class="bg-primary text-white p-2 rounded-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              </span>
-              Book Your Appointment
-            </h3>
-            
-            <div class="booking-step mb-8">
-              <h4 class="mb-4 text-sm uppercase tracking-wider text-muted font-bold">1. Select Appointment Date</h4>
-              <div class="days-container flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                <div *ngFor="let day of availableDays" 
-                  class="day-card" 
-                  [class.active]="selectedDate === day.fullDate"
-                  (click)="selectDate(day)">
-                  <span class="day-name">{{ day.name }}</span>
-                  <span class="day-date">{{ day.dateNumber }} {{ day.month }}</span>
-                  <span class="day-status" *ngIf="day.hasSlots">{{ day.slotsCount }} Slots</span>
-                  <span class="day-status no-slots" *ngIf="!day.hasSlots">Fully Booked</span>
+          <!-- About -->
+          <div class="section-card">
+            <h5 class="section-label">About</h5>
+            <p class="about-text">
+              Dr. {{ doctor.name }} is a highly qualified {{ doctor.specialization }} with over
+              {{ doctor.experience_years }} years of clinical expertise. Known for a patient-centric
+              approach at {{ doctor.clinic_name }}.
+            </p>
+          </div>
+
+          <!-- Info Rows -->
+          <div class="section-card info-list">
+            <div class="info-item">
+              <span class="info-ico">📍</span>
+              <div>
+                <span class="info-lbl">Clinic</span>
+                <span class="info-val">{{ doctor.clinic_location }}</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <span class="info-ico">📜</span>
+              <div>
+                <span class="info-lbl">Education</span>
+                <span class="info-val">MBBS, MD – {{ doctor.specialization }}</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <span class="info-ico">🌐</span>
+              <div>
+                <span class="info-lbl">Languages</span>
+                <span class="info-val">English, Tamil, Hindi</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviews peek -->
+          <div class="section-card">
+            <div class="reviews-header">
+              <h5 class="section-label">Patient Reviews</h5>
+              <button class="link-btn" (click)="openReviews()">View all</button>
+            </div>
+            <div class="reviews-peek">
+              <div class="review-card" *ngFor="let r of mockReviews.slice(0,2)">
+                <div class="reviewer-row">
+                  <div class="reviewer-av">{{ r.name.charAt(0) }}</div>
+                  <div>
+                    <span class="reviewer-name">{{ r.name }}</span>
+                    <span class="stars">★★★★★</span>
+                  </div>
+                </div>
+                <p class="review-text">"{{ r.text }}"</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ── RIGHT PANEL ── -->
+        <main class="panel-right">
+          <div class="booking-card">
+
+            <!-- Header -->
+            <div class="booking-header">
+              <div>
+                <p class="booking-eyebrow">Schedule a Consultation</p>
+                <h2 class="booking-title">Book Appointment</h2>
+              </div>
+              <div class="fee-tag">₹{{ doctor.consultation_fee }}</div>
+            </div>
+
+            <div class="booking-body">
+
+              <!-- Step 1: Date -->
+              <div class="step-section">
+                <div class="step-head">
+                  <span class="step-num">01</span>
+                  <h4 class="step-title">Choose a Date</h4>
+                </div>
+                <div class="date-track">
+                  <div *ngFor="let day of availableDays"
+                    class="date-tile"
+                    [class.active]="selectedDate === day.fullDate"
+                    [class.disabled]="!day.hasSlots"
+                    (click)="selectDate(day)">
+                    <span class="tile-month">{{ day.month }}</span>
+                    <span class="tile-day">{{ day.dateNumber }}</span>
+                    <span class="tile-week">{{ day.name.substring(0,3) }}</span>
+                    <span class="tile-dot" *ngIf="day.hasSlots"></span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="booking-step mb-8" *ngIf="selectedDate">
-              <h4 class="mb-4 text-sm uppercase tracking-wider text-muted font-bold">2. Select Available Time Range</h4>
-              <div class="slots-grid flex flex-wrap gap-4">
-                <div *ngIf="daySlots.length === 0" class="text-muted italic py-4">No slots available for this day.</div>
-                <button *ngFor="let slot of daySlots" 
-                  class="slot-btn animate-scale-in" 
-                  (click)="selectedSlot = slot" 
-                  [class.active]="selectedSlot?.id === slot.id">
-                  {{ formatTime(slot.start_time) }} - {{ formatTime(slot.end_time) }}
-                </button>
-              </div>
-            </div>
-            
-            <div class="booking-step mb-8">
-              <h4 class="mb-4 text-sm uppercase tracking-wider text-muted font-bold">3. Choose Consultation Mode</h4>
-              <div class="flex gap-4">
-                <label class="mode-card flex-1" [class.active]="selectedType === 'online'">
-                  <input type="radio" name="type" value="online" [(ngModel)]="selectedType" class="hidden"> 
-                  <div class="mode-icon">🌐</div>
-                  <div class="mode-text">
-                    <span class="title">Online Consult</span>
-                    <span class="desc">High-quality Video & Audio</span>
-                  </div>
-                  <div class="mode-check"></div>
-                </label>
-                <label class="mode-card flex-1" [class.active]="selectedType === 'offline'">
-                  <input type="radio" name="type" value="offline" [(ngModel)]="selectedType" class="hidden"> 
-                  <div class="mode-icon">🏢</div>
-                  <div class="mode-text">
-                    <span class="title">Visit Clinic</span>
-                    <span class="desc">Face-to-face Consultation</span>
-                  </div>
-                  <div class="mode-check"></div>
-                </label>
-              </div>
-            </div>
-
-            <div class="payment-summary bg-secondary-alpha p-6 rounded-2xl">
-              <div class="flex justify-between items-center mb-6">
-                <div>
-                  <p class="text-sm text-muted m-0">Consultation Fee</p>
-                  <h3 class="m-0 mt-1 font-bold text-3xl text-main">\${{ doctor.consultation_fee }}</h3>
+              <!-- Step 2: Slots -->
+              <div class="step-section" *ngIf="selectedDate">
+                <div class="step-head">
+                  <span class="step-num">02</span>
+                  <h4 class="step-title">Select a Time Slot</h4>
                 </div>
-                <div class="payment-options flex gap-3">
-                  <div
-                    class="pay-badge"
-                    [class.active]="selectedPayment === 'card'"
-                    (click)="selectedPayment = 'card'"
-                  >
+                <div *ngIf="daySlots.length === 0" class="empty-slots">No slots available for this date.</div>
+                <div class="slots-grid">
+                  <button *ngFor="let slot of daySlots"
+                    class="slot-btn"
+                    [class.active]="selectedSlot?.id === slot.id"
+                    (click)="selectedSlot = slot">
+                    {{ formatTime(slot.start_time) }} - {{ formatTime(slot.end_time) }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step 3: Mode -->
+              <div class="step-section">
+                <div class="step-head">
+                  <span class="step-num">03</span>
+                  <h4 class="step-title">Consultation Mode</h4>
+                </div>
+                <div class="mode-grid">
+                  <label class="mode-tile" [class.active]="selectedType === 'online'">
+                    <input type="radio" value="online" [(ngModel)]="selectedType" class="sr-only">
+                    <span class="mode-icon">🎥</span>
+                    <span class="mode-label">Online Call</span>
+                    <span class="mode-sub">Video / Audio</span>
+                  </label>
+                  <label class="mode-tile" [class.active]="selectedType === 'offline'">
+                    <input type="radio" value="offline" [(ngModel)]="selectedType" class="sr-only">
+                    <span class="mode-icon">🏢</span>
+                    <span class="mode-label">Clinic Visit</span>
+                    <span class="mode-sub">In-person</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Payment -->
+              <div class="step-section">
+                <div class="step-head">
+                  <span class="step-num">04</span>
+                  <h4 class="step-title">Payment Method</h4>
+                </div>
+                <div class="pay-grid">
+                  <div class="pay-tile" [class.active]="selectedPayment === 'card'" (click)="selectedPayment = 'card'">
                     <span class="pay-icon">💳</span>
-                    Card / Net Banking
+                    <div>
+                      <span class="pay-label">Card / NetBanking</span>
+                      <span class="pay-sub">Visa, Mastercard, Net</span>
+                    </div>
+                    <span class="pay-radio" [class.checked]="selectedPayment === 'card'"></span>
                   </div>
-                  <div
-                    class="pay-badge"
-                    [class.active]="selectedPayment === 'upi'"
-                    (click)="selectedPayment = 'upi'"
-                  >
+                  <div class="pay-tile" [class.active]="selectedPayment === 'upi'" (click)="selectedPayment = 'upi'">
                     <span class="pay-icon">📱</span>
-                    UPI (GooglePay / PhonePe)
+                    <div>
+                      <span class="pay-label">UPI / Wallets</span>
+                      <span class="pay-sub">GPay, PhonePe, Paytm</span>
+                    </div>
+                    <span class="pay-radio" [class.checked]="selectedPayment === 'upi'"></span>
                   </div>
                 </div>
               </div>
-              <button class="btn btn-primary w-full py-4 text-lg font-bold shadow-blue" [disabled]="booking" (click)="confirmBooking()">
-                {{ booking ? 'Preparing Secure Checkout...' : 'Confirm Appointment & Pay' }}
-              </button>
-              <p class="text-center text-xs text-muted mt-4 flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Secure 256-bit encrypted payment via Razorpay
-              </p>
-            </div>
 
+              <!-- Summary strip -->
+              <div class="summary-strip" *ngIf="selectedSlot">
+                <div class="summary-item">
+                  <span class="sum-lbl">Date</span>
+                  <span class="sum-val">{{ selectedDate }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="sum-lbl">Time</span>
+                  <span class="sum-val">{{ formatTime(selectedSlot.start_time) }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="sum-lbl">Mode</span>
+                  <span class="sum-val">{{ selectedType === 'online' ? 'Online Call' : 'Clinic Visit' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="sum-lbl">Total</span>
+                  <span class="sum-val sum-price">₹{{ doctor.consultation_fee }}</span>
+                </div>
+              </div>
+
+              <!-- CTA -->
+              <button class="cta-btn" [disabled]="booking || !selectedSlot" (click)="confirmBooking()">
+                <ng-container *ngIf="!booking">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Confirm & Pay ₹{{ doctor.consultation_fee }}
+                </ng-container>
+                <ng-container *ngIf="booking">
+                  <span class="spin-ring"></span> Processing…
+                </ng-container>
+              </button>
+
+              <p class="secure-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                256-bit SSL · Secured by Razorpay
+              </p>
+
+            </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
 
-    <!-- Review Modal (Hidden by default) -->
-    <div class="modal-backdrop" *ngIf="showReviewModal" (click)="showReviewModal = false">
-      <div class="modal-card max-w-lg" (click)="$event.stopPropagation()">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="m-0">Patient Reviews</h3>
-            <button class="close-btn" (click)="showReviewModal = false">&times;</button>
+    <!-- Review Modal -->
+    <div class="modal-overlay" *ngIf="showReviewModal" (click)="showReviewModal = false">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-top">
+          <h3 class="modal-title">Patient Testimonials</h3>
+          <button class="modal-close" (click)="showReviewModal = false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
-        <div class="reviews-list">
-            <div class="review-item mb-6 pb-6 border-b" *ngFor="let r of mockReviews">
-                <div class="flex justify-between mb-2">
-                    <span class="font-bold">{{r.name}}</span>
-                    <span class="text-yellow-500">★★★★★</span>
-                </div>
-                <p class="text-muted text-sm italic">"{{r.text}}"</p>
+        <div class="modal-reviews">
+          <div class="modal-review" *ngFor="let r of mockReviews">
+            <div class="modal-rev-row">
+              <div class="modal-av">{{ r.name.charAt(0) }}</div>
+              <div>
+                <span class="modal-rev-name">{{ r.name }}</span>
+                <span class="stars">★★★★★</span>
+              </div>
+              <span class="modal-score">5.0</span>
             </div>
+            <p class="modal-rev-text">"{{ r.text }}"</p>
+          </div>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .details-container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
-    .card { background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border-light); }
-    .sticky-info { position: sticky; top: 100px; }
-    
-    .avatar-container {
-      width: 120px;
-      height: 120px;
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
+    :host {
+      --c-bg: #F0F4FF;
+      --c-surface: #FFFFFF;
+      --c-border: #E2E8F6;
+      --c-primary: #3B5BDB;
+      --c-primary-dark: #2F4AC0;
+      --c-primary-light: #EEF2FF;
+      --c-primary-glow: rgba(59,91,219,0.18);
+      --c-text: #0F1B3D;
+      --c-muted: #64748B;
+      --c-accent: #F59E0B;
+      --c-green: #10B981;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
+      --r-card: 24px;
+      --r-sm: 12px;
+      font-family: 'DM Sans', sans-serif;
+      display: block;
+      background: var(--c-bg);
+      min-height: 100vh;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .page-root {
+      min-height: 100vh;
+      padding: 32px 24px 60px;
+      background: var(--c-bg);
+      background-image: radial-gradient(ellipse at 20% 10%, rgba(59,91,219,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(245,158,11,0.04) 0%, transparent 50%);
+    }
+
+    /* Loading */
+    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 20px; }
+    .loading-orb { width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--c-border); border-top-color: var(--c-primary); animation: spin 0.9s linear infinite; }
+    .loading-text { font-family: 'Sora', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--c-muted); }
+
+    /* Layout */
+    .layout { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 28px; align-items: start; }
+
+    /* Panels */
+    .panel-left { display: flex; flex-direction: column; gap: 16px; }
+    .panel-right {}
+
+    /* Profile Hero */
+    .profile-hero {
+      background: var(--c-surface);
+      border-radius: var(--r-card);
+      padding: 36px 28px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--c-border);
       position: relative;
+      overflow: hidden;
     }
-    .avatar-img, .avatar-init {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background-size: cover;
-      background-position: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--primary-color);
-      color: white;
-      font-size: 3rem;
-      font-weight: bold;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    }
-    .verified-badge {
+    .profile-hero::before {
+      content: '';
       position: absolute;
-      bottom: 5px;
-      right: 5px;
-      background: #10b981;
-      color: white;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 3px solid var(--bg-card);
+      inset: 0;
+      background: linear-gradient(160deg, var(--c-primary-light) 0%, transparent 50%);
+      pointer-events: none;
     }
 
-    .stat-item { display: flex; flex-direction: column; }
-    .stat-value { font-size: 1.125rem; font-weight: 800; color: var(--text-main); }
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    .avatar-wrap { position: relative; width: 108px; height: 108px; margin-bottom: 20px; }
+    .avatar-img { width: 100%; height: 100%; border-radius: 28px; background-size: cover; background-position: center; box-shadow: 0 8px 24px rgba(59,91,219,0.22); border: 3px solid white; }
+    .avatar-placeholder { width: 100%; height: 100%; border-radius: 28px; background: linear-gradient(135deg, var(--c-primary) 0%, #5B7FEE 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 800; font-family: 'Sora', sans-serif; }
+    .badge-verified { position: absolute; bottom: -4px; right: -4px; background: var(--c-green); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; border: 3px solid white; box-shadow: 0 2px 8px rgba(16,185,129,0.3); }
 
-    .info-item label { display: block; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem; letter-spacing: 0.5px; }
-    .info-item .icon { font-size: 1.25rem; }
+    .doc-name { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; }
+    .doc-spec { font-size: 0.875rem; font-weight: 500; color: var(--c-primary); margin-top: 4px; margin-bottom: 24px; }
 
-    /* Booking UI */
-    .day-card {
-      min-width: 100px;
-      border: 1px solid var(--border-light);
-      border-radius: 12px;
-      padding: 1rem;
+    .stats-row { display: flex; align-items: center; gap: 0; background: var(--c-bg); border-radius: 16px; padding: 4px; border: 1px solid var(--c-border); }
+    .stat-pill { padding: 10px 20px; text-align: center; }
+    .stat-divider { width: 1px; height: 30px; background: var(--c-border); }
+    .stat-val { display: block; font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 800; color: var(--c-text); }
+    .stat-lbl { display: block; font-size: 0.65rem; font-weight: 600; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* Section Card */
+    .section-card { background: var(--c-surface); border-radius: var(--r-card); padding: 22px; box-shadow: var(--shadow-sm); border: 1px solid var(--c-border); }
+    .section-label { font-family: 'Sora', sans-serif; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--c-muted); margin-bottom: 12px; }
+    .about-text { font-size: 0.875rem; line-height: 1.7; color: var(--c-muted); }
+
+    .info-list { display: flex; flex-direction: column; gap: 16px; }
+    .info-item { display: flex; gap: 12px; align-items: flex-start; }
+    .info-ico { font-size: 1.1rem; background: var(--c-bg); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--c-border); }
+    .info-lbl { display: block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--c-muted); }
+    .info-val { display: block; font-size: 0.875rem; font-weight: 600; color: var(--c-text); margin-top: 2px; }
+
+    .reviews-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .link-btn { background: none; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: var(--c-primary); font-family: inherit; }
+    .reviews-peek { display: flex; flex-direction: column; gap: 12px; }
+    .review-card { background: var(--c-bg); border-radius: var(--r-sm); padding: 14px; border: 1px solid var(--c-border); }
+    .reviewer-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .reviewer-av { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--c-primary) 0%, #5B7FEE 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; font-family: 'Sora', sans-serif; }
+    .reviewer-name { display: block; font-size: 0.8rem; font-weight: 700; color: var(--c-text); }
+    .stars { color: #F59E0B; font-size: 0.65rem; display: block; }
+    .review-text { font-size: 0.8rem; color: var(--c-muted); line-height: 1.5; font-style: italic; }
+
+    /* Booking Card */
+    .booking-card { background: var(--c-surface); border-radius: 28px; box-shadow: var(--shadow-lg); border: 1px solid var(--c-border); overflow: hidden; }
+
+    .booking-header {
+      background: linear-gradient(135deg, #3B5BDB 0%, #2F4AC0 100%);
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .booking-header::after {
+      content: '';
+      position: absolute;
+      right: -40px; top: -40px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+    }
+    .booking-eyebrow { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.65); margin-bottom: 4px; }
+    .booking-title { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: -0.3px; }
+    .fee-tag { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 10px 18px; font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 800; color: white; }
+
+    .booking-body { padding: 32px; display: flex; flex-direction: column; gap: 32px; }
+
+    /* Steps */
+    .step-section {}
+    .step-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .step-num { font-family: 'Sora', sans-serif; font-size: 0.65rem; font-weight: 800; color: var(--c-primary); background: var(--c-primary-light); padding: 4px 8px; border-radius: 6px; letter-spacing: 0.5px; }
+    .step-title { font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; color: var(--c-text); }
+
+    /* Dates */
+    .date-track { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+    .date-track::-webkit-scrollbar { display: none; }
+    .date-tile {
+      min-width: 68px;
+      padding: 14px 10px 10px;
+      background: var(--c-bg);
+      border: 1.5px solid var(--c-border);
+      border-radius: 18px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      background: var(--bg-card);
-    }
-    .day-card:hover { transform: translateY(-2px); border-color: var(--primary-color); }
-    .day-card.active { border-color: var(--primary-color); background: rgba(37, 99, 235, 0.05); box-shadow: 0 8px 15px -10px var(--primary-color); position: relative; }
-    .day-card.active::after { content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); border: 10px solid transparent; border-top-color: var(--primary-color); }
-    .day-name { display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
-    .day-date { display: block; font-size: 1.1rem; font-weight: 800; margin: 0.25rem 0; }
-    .day-status { display: block; font-size: 0.7rem; color: #10b981; font-weight: 700; }
-    .day-status.no-slots { color: #ef4444; }
-
-    .slot-btn {
-      padding: 0.75rem 1.25rem;
-      border-radius: 12px;
-      border: 1px solid var(--border-light);
-      background: var(--bg-main);
-      color: var(--text-main);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .slot-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-    .slot-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); transform: scale(1.05); }
-
-    .mode-card {
-      border: 2px solid var(--border-light);
-      border-radius: 16px;
-      padding: 1.25rem;
+      transition: all 0.2s ease;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 1.25rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      gap: 2px;
       position: relative;
+      flex-shrink: 0;
     }
-    .mode-card:hover { border-color: var(--primary-color); }
-    .mode-card.active { border-color: var(--primary-color); background: rgba(37, 99, 235, 0.03); }
-    .mode-icon { font-size: 2rem; }
-    .mode-text .title { display: block; font-weight: 800; font-size: 1rem; }
-    .mode-text .desc { display: block; font-size: 0.75rem; color: var(--text-muted); }
-    .mode-check { position: absolute; top: 1rem; right: 1rem; width: 20px; height: 20px; border: 2px solid var(--border-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .mode-card.active .mode-check { border-color: var(--primary-color); background: var(--primary-color); }
-    .mode-card.active .mode-check::after { content: '✓'; color: white; font-size: 12px; font-weight: bold; }
+    .date-tile:hover:not(.disabled) { border-color: #97ABEE; background: white; transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+    .date-tile.active { border-color: var(--c-primary); background: var(--c-primary-light); transform: translateY(-3px); box-shadow: 0 6px 20px var(--c-primary-glow); }
+    .date-tile.disabled { opacity: 0.35; cursor: not-allowed; }
+    .tile-month { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; color: var(--c-muted); letter-spacing: 0.5px; }
+    .tile-day { font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 800; color: var(--c-text); line-height: 1; }
+    .date-tile.active .tile-day { color: var(--c-primary); }
+    .tile-week { font-size: 0.6rem; font-weight: 600; color: var(--c-muted); }
+    .tile-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--c-green); margin-top: 4px; }
+    .date-tile.active .tile-dot { background: var(--c-primary); }
 
-    .pay-badge {
+    /* Slots */
+    .empty-slots { color: var(--c-muted); font-size: 0.875rem; background: var(--c-bg); padding: 16px; border-radius: var(--r-sm); text-align: center; }
+    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+    .slot-btn {
+      padding: 13px 10px;
+      background: var(--c-bg);
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--r-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--c-text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .slot-btn:hover { border-color: #97ABEE; background: white; }
+    .slot-btn.active { background: var(--c-primary); border-color: var(--c-primary); color: white; box-shadow: 0 6px 16px var(--c-primary-glow); transform: scale(1.03); }
+
+    /* Mode */
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .mode-tile {
+      padding: 18px 16px;
+      background: var(--c-bg);
+      border: 1.5px solid var(--c-border);
+      border-radius: 18px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .mode-tile:hover { border-color: #97ABEE; background: white; }
+    .mode-tile.active { border-color: var(--c-primary); background: var(--c-primary-light); box-shadow: 0 4px 16px var(--c-primary-glow); }
+    .mode-icon { font-size: 1.6rem; margin-bottom: 4px; }
+    .mode-label { font-family: 'Sora', sans-serif; font-size: 0.875rem; font-weight: 700; color: var(--c-text); }
+    .mode-sub { font-size: 0.72rem; color: var(--c-muted); }
+
+    /* Payment */
+    .pay-grid { display: flex; flex-direction: column; gap: 10px; }
+    .pay-tile {
+      padding: 16px;
+      background: var(--c-bg);
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--r-sm);
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.8rem;
-      background: var(--bg-main);
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      border: 1px solid var(--border-light);
+      gap: 14px;
+      transition: all 0.2s;
     }
-    .pay-badge.active { border-color: var(--primary-color); color: var(--primary-color); }
+    .pay-tile:hover { border-color: #97ABEE; background: white; }
+    .pay-tile.active { border-color: var(--c-primary); background: var(--c-primary-light); }
+    .pay-icon { font-size: 1.4rem; }
+    .pay-tile > div { flex: 1; }
+    .pay-label { display: block; font-size: 0.875rem; font-weight: 700; color: var(--c-text); }
+    .pay-sub { display: block; font-size: 0.72rem; color: var(--c-muted); margin-top: 2px; }
+    .pay-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--c-border); flex-shrink: 0; transition: all 0.2s; }
+    .pay-radio.checked { border-color: var(--c-primary); background: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-light); }
 
-    .shadow-blue { box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4); }
-    
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-    .modal-card { background: var(--bg-card); padding: 2.5rem; border-radius: 24px; width: 90%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
-    .close-btn { background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--text-muted); }
+    /* Summary Strip */
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      background: var(--c-bg);
+      border: 1.5px solid var(--c-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .summary-item { padding: 14px 16px; border-right: 1px solid var(--c-border); }
+    .summary-item:last-child { border-right: none; }
+    .sum-lbl { display: block; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--c-muted); margin-bottom: 4px; }
+    .sum-val { display: block; font-size: 0.8rem; font-weight: 700; color: var(--c-text); }
+    .sum-price { color: var(--c-primary); font-family: 'Sora', sans-serif; font-size: 0.95rem; }
 
-    @media (max-width: 768px) {
-      .stats-row { flex-wrap: wrap; gap: 1rem; }
-      .mode-card { flex-direction: column; text-align: center; gap: 0.5rem; }
+    /* CTA */
+    .cta-btn {
+      width: 100%;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-dark) 100%);
+      color: white;
+      border: none;
+      border-radius: 18px;
+      font-family: 'Sora', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 24px var(--c-primary-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: -0.2px;
+    }
+    .cta-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(59,91,219,0.3); }
+    .cta-btn:active:not(:disabled) { transform: translateY(-1px); }
+    .cta-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .secure-note { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.72rem; font-weight: 600; color: var(--c-muted); opacity: 0.7; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,27,61,0.6); backdrop-filter: blur(6px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.2s ease; }
+    .modal-box { background: var(--c-surface); border-radius: 24px; width: 100%; max-width: 480px; box-shadow: 0 24px 60px rgba(0,0,0,0.2); overflow: hidden; animation: slideUp 0.3s ease; }
+    .modal-top { padding: 24px 24px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--c-border); }
+    .modal-title { font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 800; color: var(--c-text); }
+    .modal-close { background: var(--c-bg); border: none; border-radius: 10px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--c-muted); transition: 0.2s; }
+    .modal-close:hover { background: #FEE2E2; color: #EF4444; }
+    .modal-reviews { padding: 20px 24px 28px; display: flex; flex-direction: column; gap: 18px; max-height: 400px; overflow-y: auto; }
+    .modal-review { background: var(--c-bg); border-radius: 16px; padding: 18px; border: 1px solid var(--c-border); }
+    .modal-rev-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .modal-av { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--c-primary) 0%, #5B7FEE 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; font-family: 'Sora', sans-serif; }
+    .modal-rev-name { display: block; font-size: 0.875rem; font-weight: 700; color: var(--c-text); }
+    .modal-score { margin-left: auto; font-family: 'Sora', sans-serif; font-size: 0.875rem; font-weight: 800; color: var(--c-accent); }
+    .modal-rev-text { font-size: 0.875rem; color: var(--c-muted); line-height: 1.6; font-style: italic; }
+
+    /* Utilities */
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    .spin-ring { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite; vertical-align: middle; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .summary-strip { grid-template-columns: 1fr 1fr; }
+      .summary-item:nth-child(2) { border-right: none; }
+    }
+    @media (max-width: 480px) {
+      .page-root { padding: 16px 12px 60px; }
+      .booking-body { padding: 20px; }
+      .summary-strip { grid-template-columns: 1fr 1fr; }
     }
   `]
 })
@@ -357,14 +607,13 @@ export class DoctorDetailsComponent implements OnInit {
     private appointmentService: AppointmentService,
     private scheduleService: ScheduleService,
     private toastService: ToastService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.fetchDoctorDetails(id);
-    }
+    if (id) this.fetchDoctorDetails(id);
   }
 
   fetchDoctorDetails(id: string) {
@@ -373,11 +622,12 @@ export class DoctorDetailsComponent implements OnInit {
       next: (res) => {
         this.doctor = res;
         this.generateAvailableDays();
-        this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toastService.error('Failed to load doctor profile');
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -385,39 +635,35 @@ export class DoctorDetailsComponent implements OnInit {
   generateAvailableDays() {
     this.scheduleService.getSlotsByDoctorId(this.doctor.id).subscribe({
       next: (slots: any) => {
-        const days = [];
         const today = new Date();
-
-        for (let i = 1; i <= 7; i++) {
+        this.availableDays = Array.from({ length: 7 }, (_, i) => {
           const date = new Date();
-          date.setDate(today.getDate() + i);
-
+          date.setDate(today.getDate() + i + 1);
           const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
           const dateString = date.toISOString().split('T')[0];
-
           const daySlots = slots.filter((s: any) => s.available_day === dayName);
-
-          days.push({
+          return {
             fullDate: dateString,
             name: dayName,
             dateNumber: date.getDate(),
             month: date.toLocaleDateString('en-US', { month: 'short' }),
             hasSlots: daySlots.length > 0,
-            slotsCount: daySlots.length,
             slots: daySlots
-          });
-        }
-        this.availableDays = days;
+          };
+        });
+        this.loading = false;
+        this.cdr.detectChanges();
       },
-      error: () => this.toastService.error('Failed to load availability')
+      error: () => {
+        this.toastService.error('Failed to load availability');
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   selectDate(day: any) {
-    if (!day.hasSlots) {
-      this.toastService.warning('No available slots for this day');
-      return;
-    }
+    if (!day.hasSlots) { this.toastService.warning('No available slots for this day'); return; }
     this.selectedDate = day.fullDate;
     this.daySlots = day.slots;
     this.selectedSlot = null;
@@ -425,78 +671,89 @@ export class DoctorDetailsComponent implements OnInit {
 
   formatTime(time: string) {
     if (!time) return '';
-    let [h, m] = time.split(':');
-    let hNum = parseInt(h, 10);
+    const [h, m] = time.split(':');
+    const hNum = parseInt(h, 10);
     const ampm = hNum >= 12 ? 'PM' : 'AM';
-    hNum = hNum % 12 || 12;
-    return `${hNum}:${m} ${ampm}`;
+    return `${hNum % 12 || 12}:${m} ${ampm}`;
   }
 
-  openReviews() {
-    this.showReviewModal = true;
-  }
-
-  goBack() {
-    this.router.navigate(['/patient-dashboard/doctors']);
-  }
+  openReviews() { this.showReviewModal = true; }
 
   confirmBooking() {
-    // Requirement 30: Validation alert message
+
+    // ✅ check slot first
     if (!this.selectedSlot) {
-      this.toastService.error('Please select an appointment time slot');
+      this.toastService.error('Please select a time slot');
       return;
     }
-    if (!this.selectedType) {
-      this.toastService.error('Please select a consultation mode');
-      return;
-    }
+
+    // ✅ build slot range safely (HH:mm-HH:mm)
+    const slotRange =
+      this.selectedSlot.start_time.substring(0, 5)
+      + '-'
+      + this.selectedSlot.end_time.substring(0, 5);
+
+
+    // ✅ prevent double-click booking
+    if (this.booking) return;
 
     this.booking = true;
 
-    const bookingData = {
+
+    this.appointmentService.bookAppointment({
       doctorId: this.doctor.id,
       date: this.selectedDate,
-      timeSlot: this.selectedSlot.start_time,
+      timeSlot: slotRange,
       type: this.selectedType
-    };
+    })
+      .subscribe({
 
-    this.appointmentService.bookAppointment(bookingData).subscribe({
-      next: (res) => {
-        this.initiateRazorpay(res);
-      },
-      error: () => {
-        this.booking = false;
-        this.toastService.error('Failed to initiate booking');
-      }
-    });
+        next: (res) => {
+
+          this.booking = false;
+
+          if (!res?.appointment?.id) {
+            this.toastService.error('Invalid booking response');
+            return;
+          }
+
+          // ✅ move to payment
+          this.initiateRazorpay(res);
+
+        },
+
+        error: (err) => {
+
+          console.error(err);
+
+          this.booking = false;
+
+          this.toastService.error(
+            err?.error?.message || 'Failed to initiate booking'
+          );
+
+        }
+
+      });
+
   }
-
   initiateRazorpay(res: any) {
-    const options = {
+    const rzp = new window.Razorpay({
       key: 'rzp_test_SHaxEvQdfSKk6c',
       amount: this.doctor.consultation_fee * 100,
       currency: 'INR',
       name: 'HealCare Platform',
       description: `Consultation with Dr. ${this.doctor.name}`,
-      method: {
-        upi: this.selectedPayment === 'upi',
-        card: this.selectedPayment === 'card',
-        netbanking: this.selectedPayment === 'card'
-      },
-      handler: (response: any) => {
+      method: { upi: this.selectedPayment === 'upi', card: this.selectedPayment === 'card', netbanking: this.selectedPayment === 'card' },
+      handler: () => {
         this.appointmentService.mockPaymentSuccess(res.appointment.id).subscribe(() => {
-          this.toastService.success('Booking Successful! Appointment Confirmed.');
+          this.toastService.success('Booking Confirmed!');
           this.router.navigate(['/patient-dashboard/appointments']);
         });
       },
-      prefill: {
-        name: localStorage.getItem('name') || 'Patient',
-        email: 'patient@healcare.com'
-      },
-      theme: { color: '#2563eb' }
-    };
-
-    const rzp = new window.Razorpay(options);
+      prefill: { name: localStorage.getItem('name') || 'Patient', email: 'patient@healcare.com' },
+      theme: { color: '#3B5BDB' }
+    });
     rzp.open();
     this.booking = false;
   }

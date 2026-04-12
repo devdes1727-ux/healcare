@@ -33,11 +33,15 @@ exports.createSlot = async (req, res) => {
 
 
     // Insert slot
+    // Ensure startTime/endTime have :00 for SQL Time part if only HH:mm
+    const sTime = startTime.length === 5 ? startTime + ':00' : startTime;
+    const eTime = endTime.length === 5 ? endTime + ':00' : endTime;
+
     const result = await pool.request()
       .input('doctorId', mssql.Int, doctor.id)
       .input('day', mssql.NVarChar, availableDay)
-      .input('start', mssql.Time, startTime + ':00')
-      .input('end', mssql.Time, endTime + ':00')
+      .input('start', mssql.Time, sTime)
+      .input('end', mssql.Time, eTime)
       .input('max', mssql.Int, maxPatients || 1)
       .query(`
         INSERT INTO Slots
