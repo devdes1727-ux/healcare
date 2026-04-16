@@ -157,7 +157,6 @@ interface MenuItem {
 
 /* CONTENT */
 .content{
-  padding:20px;
   overflow:auto;
 }
 

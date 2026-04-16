@@ -29,13 +29,17 @@ declare var window: any;
 
           <!-- Hero -->
           <div class="profile-hero">
-            <div class="avatar-wrap">
-              <div class="avatar-img" *ngIf="doctor.profile_image" [style.backgroundImage]="'url(' + doctor.profile_image + ')'"></div>
-              <div class="avatar-placeholder" *ngIf="!doctor.profile_image">{{ (doctor.name || 'D').charAt(0) }}</div>
-              <span class="badge-verified" *ngIf="doctor.is_verified">✓</span>
+            <div style="display: flex; gap: 20px;">
+              <div class="avatar-wrap">
+                <div class="avatar-img" *ngIf="doctor.profile_image" [style.backgroundImage]="'url(' + doctor.profile_image + ')'"></div>
+                <div class="avatar-placeholder" *ngIf="!doctor.profile_image">{{ (doctor.name || 'D').charAt(0) }}</div>
+                <span class="badge-verified" *ngIf="doctor.is_verified">✓</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <h1 class="doc-name">Dr. {{ doctor.name }}</h1>
+                <span class="doc-spec">{{ doctor.specialization }}</span>
+              </div>
             </div>
-            <h1 class="doc-name">Dr. {{ doctor.name }}</h1>
-            <p class="doc-spec">{{ doctor.specialization }}</p>
 
             <div class="stats-row">
               <div class="stat-pill">
@@ -53,16 +57,14 @@ declare var window: any;
                 <span class="stat-lbl">Fee</span>
               </div>
             </div>
-          </div>
-
-          <!-- About -->
-          <div class="section-card">
-            <h5 class="section-label">About</h5>
-            <p class="about-text">
-              Dr. {{ doctor.name }} is a highly qualified {{ doctor.specialization }} with over
-              {{ doctor.experience_years }} years of clinical expertise. Known for a patient-centric
-              approach at {{ doctor.clinic_name }}.
-            </p>
+            <div>
+              <h5 class="section-label">About</h5>
+              <p class="about-text">
+                Dr. {{ doctor.name }} is a highly qualified {{ doctor.specialization }} with over
+                {{ doctor.experience_years }} years of clinical expertise. Known for a patient-centric
+                approach at {{ doctor.clinic_name }}.
+              </p>
+            </div>
           </div>
 
           <!-- Info Rows -->
@@ -219,7 +221,7 @@ declare var window: any;
                 </div>
                 <div class="summary-item">
                   <span class="sum-lbl">Time</span>
-                  <span class="sum-val">{{ formatTime(selectedSlot.start_time) }}</span>
+                  <span class="sum-val">{{ formatTime(selectedSlot.start_time) + " - " + formatTime(selectedSlot.end_time)}}</span>
                 </div>
                 <div class="summary-item">
                   <span class="sum-lbl">Mode</span>
@@ -320,7 +322,7 @@ declare var window: any;
     .loading-text { font-family: 'Sora', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--c-muted); }
 
     /* Layout */
-    .layout { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 28px; align-items: start; }
+    .layout {display: grid; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
 
     /* Panels */
     .panel-left { display: flex; flex-direction: column; gap: 16px; }
@@ -330,11 +332,8 @@ declare var window: any;
     .profile-hero {
       background: var(--c-surface);
       border-radius: var(--r-card);
-      padding: 36px 28px 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
+      padding: 20px;
+      display: inline-block;
       box-shadow: var(--shadow-md);
       border: 1px solid var(--c-border);
       position: relative;
@@ -349,14 +348,14 @@ declare var window: any;
     }
 
     .avatar-wrap { position: relative; width: 108px; height: 108px; margin-bottom: 20px; }
-    .avatar-img { width: 100%; height: 100%; border-radius: 28px; background-size: cover; background-position: center; box-shadow: 0 8px 24px rgba(59,91,219,0.22); border: 3px solid white; }
+    .avatar-img { width: 100%; height: 100%; border-radius: 28px; background-size: cover; background-position: center;border: 3px solid white; }
     .avatar-placeholder { width: 100%; height: 100%; border-radius: 28px; background: linear-gradient(135deg, var(--c-primary) 0%, #5B7FEE 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 800; font-family: 'Sora', sans-serif; }
     .badge-verified { position: absolute; bottom: -4px; right: -4px; background: var(--c-green); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; border: 3px solid white; box-shadow: 0 2px 8px rgba(16,185,129,0.3); }
 
-    .doc-name { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; }
-    .doc-spec { font-size: 0.875rem; font-weight: 500; color: var(--c-primary); margin-top: 4px; margin-bottom: 24px; }
+    .doc-name { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px;display: inline-block; }
+    .doc-spec { font-size: 0.875rem; font-weight: 500; color: var(--c-primary);}
 
-    .stats-row { display: flex; align-items: center; gap: 0; background: var(--c-bg); border-radius: 16px; padding: 4px; border: 1px solid var(--c-border); }
+    .stats-row { display: flex; align-items: center; gap: 0; background: var(--c-bg); border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--c-border); }
     .stat-pill { padding: 10px 20px; text-align: center; }
     .stat-divider { width: 1px; height: 30px; background: var(--c-border); }
     .stat-val { display: block; font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 800; color: var(--c-text); }
@@ -388,7 +387,7 @@ declare var window: any;
 
     .booking-header {
       background: linear-gradient(135deg, #3B5BDB 0%, #2F4AC0 100%);
-      padding: 28px 32px;
+      padding: 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -407,7 +406,7 @@ declare var window: any;
     .booking-title { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: -0.3px; }
     .fee-tag { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 10px 18px; font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 800; color: white; }
 
-    .booking-body { padding: 32px; display: flex; flex-direction: column; gap: 32px; }
+    .booking-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 
     /* Steps */
     .step-section {}
@@ -416,7 +415,7 @@ declare var window: any;
     .step-title { font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; color: var(--c-text); }
 
     /* Dates */
-    .date-track { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+    .date-track { display: flex; gap: 10px; overflow-x: auto; padding: 8px; scrollbar-width: none; }
     .date-track::-webkit-scrollbar { display: none; }
     .date-tile {
       min-width: 68px;
@@ -465,25 +464,25 @@ declare var window: any;
     /* Mode */
     .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .mode-tile {
-      padding: 18px 16px;
+      padding: 10px;
       background: var(--c-bg);
       border: 1.5px solid var(--c-border);
       border-radius: 18px;
       cursor: pointer;
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
       transition: all 0.2s;
     }
     .mode-tile:hover { border-color: #97ABEE; background: white; }
     .mode-tile.active { border-color: var(--c-primary); background: var(--c-primary-light); box-shadow: 0 4px 16px var(--c-primary-glow); }
-    .mode-icon { font-size: 1.6rem; margin-bottom: 4px; }
+    .mode-icon { font-size: 1.6rem;margin-right: 10px;}
     .mode-label { font-family: 'Sora', sans-serif; font-size: 0.875rem; font-weight: 700; color: var(--c-text); }
     .mode-sub { font-size: 0.72rem; color: var(--c-muted); }
 
     /* Payment */
-    .pay-grid { display: flex; flex-direction: column; gap: 10px; }
+    .pay-grid { display: flex; flex-direction: row; gap: 20px; }
     .pay-tile {
       padding: 16px;
       background: var(--c-bg);

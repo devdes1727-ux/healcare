@@ -178,8 +178,6 @@ Manage
   styles: [`
 
 .dashboard-wrapper{
-max-width:1100px;
-margin:auto;
 padding:20px;
 }
 
@@ -317,8 +315,7 @@ border:none;
 
 
 .primary{
-background:#1976d2;
-color:white;
+color:#1976d2;
 }
 
 

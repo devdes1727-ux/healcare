@@ -5,21 +5,13 @@ import {
   ChangeDetectorRef
 } from '@angular/core';
 
-import {
-  CommonModule
-} from '@angular/common';
+import { CommonModule } from '@angular/common';
 
-import {
-  FormsModule
-} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 
-import {
-  AppointmentService
-} from '../../services/appointment.service';
+import { AppointmentService } from '../../services/appointment.service';
 
-import {
-  ToastService
-} from '../../services/toast.service';
+import { ToastService } from '../../services/toast.service';
 
 
 @Component({
@@ -39,36 +31,25 @@ import {
 
 <div class="page-container">
 
-<h2 class="page-title">
-My Appointments
-</h2>
+<h2 class="page-title">My Appointments</h2>
 
-
-<!-- LOADING -->
 
 <div *ngIf="loading" class="loading">
 Loading appointments...
 </div>
 
 
-<!-- EMPTY STATE -->
-
-<div
-*ngIf="!loading && displayedAppts.length===0"
-class="empty">
-
+<div *ngIf="!loading && displayedAppts.length===0" class="empty">
 No appointments booked yet
-
 </div>
 
-
-<!-- APPOINTMENT GRID -->
 
 <div class="appointment-grid">
 
 <div
 *ngFor="let apt of displayedAppts; trackBy: trackByApt"
 class="appointment-card">
+
 
 <div class="card-header">
 
@@ -84,7 +65,6 @@ Dr {{apt.doctorName}}
 
 </div>
 
-
 <span
 class="status-badge"
 [ngClass]="apt.status">
@@ -96,7 +76,6 @@ class="status-badge"
 </div>
 
 
-
 <div class="card-body">
 
 <div class="info">
@@ -104,7 +83,7 @@ class="status-badge"
 </div>
 
 <div class="info">
-🕒 {{apt.start_time + " - " + apt.end_time}}
+🕒 {{apt.start_time}} - {{apt.end_time}}
 </div>
 
 <div class="info">
@@ -118,16 +97,13 @@ class="status-badge"
 </div>
 
 
-
 <div class="card-actions">
 
 <button
 *ngIf="showJoinBtn(apt)"
 class="btn primary"
 (click)="joinCall(apt)">
-
 Join Call
-
 </button>
 
 
@@ -135,9 +111,7 @@ Join Call
 *ngIf="apt.status==='confirmed'"
 class="btn outline"
 (click)="openReschedule(apt)">
-
 Reschedule
-
 </button>
 
 
@@ -145,9 +119,7 @@ Reschedule
 *ngIf="apt.status==='confirmed'"
 class="btn danger"
 (click)="confirmCancel(apt)">
-
 Cancel
-
 </button>
 
 </div>
@@ -166,32 +138,23 @@ class="modal"
 
 <div class="modal-box">
 
-<h3>
-Cancel Appointment?
-</h3>
+<h3>Cancel Appointment?</h3>
 
-<p>
-Are you sure you want to cancel?
-</p>
-
+<p>Are you sure you want to cancel?</p>
 
 <div class="modal-actions">
 
 <button
 class="btn danger"
 (click)="executeCancel()">
-
 Yes Cancel
-
 </button>
 
 
 <button
 class="btn outline"
 (click)="closeModal()">
-
 Close
-
 </button>
 
 </div>
@@ -210,24 +173,34 @@ class="modal"
 
 <div class="modal-box">
 
-<h3>
-Request Reschedule
-</h3>
+<h3>Request Reschedule</h3>
 
 <p class="hint">
 Select new preferred slot
 </p>
 
+
 <input
 type="date"
 [(ngModel)]="newDate"
+(change)="loadSlots()"
 class="input"/>
 
 
-<input
-type="time"
+<select
+class="input"
 [(ngModel)]="newTime"
-class="input"/>
+[disabled]="!availableSlots.length">
+
+<option
+*ngFor="let slot of availableSlots"
+[value]="slot.timeSlot">
+
+{{slot.start}} - {{slot.end}}
+
+</option>
+
+</select>
 
 
 <div class="modal-actions">
@@ -235,18 +208,14 @@ class="input"/>
 <button
 class="btn primary"
 (click)="executeReschedule()">
-
 Send Request
-
 </button>
 
 
 <button
 class="btn outline"
 (click)="closeModal()">
-
 Cancel
-
 </button>
 
 </div>
@@ -256,8 +225,6 @@ Cancel
 </div>
 
 </div>
-
-
 
 <style>
 
@@ -267,13 +234,11 @@ margin:auto;
 padding:30px 20px 60px;
 }
 
-
 .page-title{
 font-size:28px;
 font-weight:600;
 margin-bottom:25px;
 }
-
 
 .loading,
 .empty{
@@ -283,33 +248,18 @@ font-size:18px;
 color:#777;
 }
 
-
-/* GRID LAYOUT FIX */
-
 .appointment-grid{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
 gap:20px;
 }
 
-
-/* CARD */
-
 .appointment-card{
 background:white;
 border-radius:14px;
 padding:18px;
 box-shadow:0 3px 12px rgba(0,0,0,0.08);
-transition:.2s;
 }
-
-
-.appointment-card:hover{
-transform:translateY(-3px);
-}
-
-
-/* HEADER */
 
 .card-header{
 display:flex;
@@ -317,14 +267,10 @@ justify-content:space-between;
 align-items:center;
 }
 
-
 .speciality{
 color:#666;
 font-size:14px;
 }
-
-
-/* BODY */
 
 .card-body{
 display:grid;
@@ -333,13 +279,9 @@ gap:8px;
 margin-top:12px;
 }
 
-
 .info{
 font-size:15px;
 }
-
-
-/* ACTION BUTTONS */
 
 .card-actions{
 margin-top:15px;
@@ -348,9 +290,6 @@ gap:10px;
 flex-wrap:wrap;
 }
 
-
-/* STATUS BADGE */
-
 .status-badge{
 padding:6px 14px;
 border-radius:20px;
@@ -358,26 +297,20 @@ font-size:13px;
 text-transform:capitalize;
 }
 
-
 .status-badge.confirmed{
 background:#e6f7ef;
 color:#12a150;
 }
-
 
 .status-badge.pending{
 background:#fff4e5;
 color:#e28b00;
 }
 
-
 .status-badge.cancelled_by_patient{
 background:#ffe6e6;
 color:#cc0000;
 }
-
-
-/* BUTTONS */
 
 .btn{
 padding:8px 14px;
@@ -387,26 +320,20 @@ border:none;
 font-size:14px;
 }
 
-
 .btn.primary{
 background:#1976d2;
 color:white;
 }
-
 
 .btn.outline{
 border:1px solid #ccc;
 background:white;
 }
 
-
 .btn.danger{
 background:#e53935;
 color:white;
 }
-
-
-/* MODAL */
 
 .modal{
 position:fixed;
@@ -418,9 +345,7 @@ background:rgba(0,0,0,0.4);
 display:flex;
 align-items:center;
 justify-content:center;
-z-index:1000;
 }
-
 
 .modal-box{
 background:white;
@@ -429,20 +354,17 @@ border-radius:14px;
 width:320px;
 }
 
-
 .modal-actions{
 margin-top:15px;
 display:flex;
 gap:10px;
 }
 
-
 .input{
 width:100%;
 padding:8px;
 margin-top:10px;
 }
-
 
 .hint{
 font-size:13px;
@@ -459,6 +381,8 @@ margin-bottom:10px;
 export class MyAppointmentsComponent implements OnInit {
 
   displayedAppts: any[] = []
+
+  availableSlots: any[] = []
 
   loading = true
 
@@ -521,6 +445,70 @@ export class MyAppointmentsComponent implements OnInit {
   }
 
 
+  /* SLOT LOADER */
+
+  loadSlots() {
+
+    if (!this.selectedApt || !this.newDate) return
+
+    const doctorId =
+      this.selectedApt.doctor_id ||
+      this.selectedApt.doctorId ||
+      this.selectedApt.doctorID
+
+    if (!doctorId) {
+
+      this.toast.error("Doctor id missing")
+
+      console.log("Appointment object:", this.selectedApt)
+
+      return
+
+    }
+
+    this.appointmentService
+      .getAvailableSlots(doctorId, this.newDate)
+      .subscribe({
+
+        next: (res: any[]) => {
+
+          this.availableSlots = res.map(slot => {
+
+            const start = new Date(slot.start_time)
+              .toISOString()
+              .substring(11, 16)
+
+            const end = new Date(slot.end_time)
+              .toISOString()
+              .substring(11, 16)
+
+            return {
+
+              start,
+              end,
+              timeSlot: `${start}-${end}`
+
+            }
+
+          })
+
+          this.cdr.markForCheck()
+
+        },
+
+        error: () => {
+
+          this.toast.error("Failed to load slots")
+
+        }
+
+      })
+
+  }
+
+
+  /* JOIN CALL */
+
   showJoinBtn(apt: any) {
 
     return (
@@ -534,13 +522,12 @@ export class MyAppointmentsComponent implements OnInit {
 
   joinCall(apt: any) {
 
-    window.open(
-      apt.meeting_link,
-      "_blank"
-    )
+    window.open(apt.meeting_link, "_blank")
 
   }
 
+
+  /* CANCEL */
 
   confirmCancel(apt: any) {
 
@@ -564,9 +551,7 @@ export class MyAppointmentsComponent implements OnInit {
 
         next: () => {
 
-          this.toast.success(
-            "Appointment cancelled"
-          )
+          this.toast.success("Appointment cancelled")
 
           this.closeModal()
 
@@ -588,9 +573,18 @@ export class MyAppointmentsComponent implements OnInit {
   }
 
 
+  /* RESCHEDULE */
+
   openReschedule(apt: any) {
 
     this.selectedApt = apt
+    console.log("FULL APPOINTMENT OBJECT:", apt);
+
+    this.availableSlots = []
+
+    this.newDate = ''
+
+    this.newTime = ''
 
     this.activeModal = 'reschedule'
 
@@ -603,9 +597,7 @@ export class MyAppointmentsComponent implements OnInit {
 
     if (!this.newDate || !this.newTime) {
 
-      this.toast.error(
-        "Select date & time"
-      )
+      this.toast.error("Select date & slot")
 
       return
 
@@ -616,16 +608,14 @@ export class MyAppointmentsComponent implements OnInit {
         this.selectedApt.id,
         {
           date: this.newDate,
-          time: this.newTime
+          timeSlot: this.newTime
         }
       )
       .subscribe({
 
         next: () => {
 
-          this.toast.success(
-            "Reschedule request sent"
-          )
+          this.toast.success("Reschedule request sent")
 
           this.closeModal()
 
@@ -647,6 +637,8 @@ export class MyAppointmentsComponent implements OnInit {
   }
 
 
+  /* CLOSE MODAL */
+
   closeModal() {
 
     this.activeModal = null
@@ -656,6 +648,8 @@ export class MyAppointmentsComponent implements OnInit {
     this.newDate = ''
 
     this.newTime = ''
+
+    this.availableSlots = []
 
     this.cdr.markForCheck()
 

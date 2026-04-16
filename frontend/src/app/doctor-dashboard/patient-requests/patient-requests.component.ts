@@ -184,7 +184,7 @@ import { ToastService } from '../../services/toast.service';
 
             <!-- Confirmed -->
             <ng-container *ngIf="selectedRequest.status === 'confirmed'">
-              <div class="action-hint confirmed">Appointment is confirmed</div>
+              <!--<div class="action-hint confirmed">Appointment is confirmed</div>-->
               <div class="action-row">
                 <button *ngIf="selectedRequest.consultation_type === 'online'" class="act-btn video" (click)="joinCall(selectedRequest)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
@@ -218,11 +218,27 @@ import { ToastService } from '../../services/toast.service';
         <div class="modal-body">
           <div class="modal-field">
             <label class="modal-lbl">New Date</label>
-            <input type="date" class="modal-input" [(ngModel)]="newDate">
+            <input
+              type="date"
+              class="modal-input"
+              [(ngModel)]="newDate"
+              (change)="loadSlots()">
           </div>
           <div class="modal-field">
             <label class="modal-lbl">New Time</label>
-            <input type="time" class="modal-input" [(ngModel)]="newTime">
+            <select
+              class="modal-input"
+              [(ngModel)]="newTime">
+
+              <option
+              *ngFor="let slot of availableSlots"
+              [value]="slot.timeSlot">
+
+              {{ slot.start }} - {{ slot.end }}
+
+              </option>
+
+              </select>
           </div>
         </div>
         <div class="modal-foot">
@@ -276,7 +292,6 @@ import { ToastService } from '../../services/toast.service';
     .root {
       display: grid;
       grid-template-columns: var(--sidebar-w) 1fr;
-      height: 100vh;
       overflow: hidden;
       background: var(--bg);
     }
@@ -291,11 +306,11 @@ import { ToastService } from '../../services/toast.service';
     }
 
     .sidebar-head {
-      padding: 28px 22px 20px;
+      padding: 20px 20px;
       border-bottom: 1px solid var(--border);
     }
     .eyebrow { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--primary); margin-bottom: 4px; }
-    .sidebar-title { font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--text); letter-spacing: -0.4px; }
+    .sidebar-title { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.4px; }
 
     .search-wrap { position: relative; margin: 16px 16px 0; }
     .search-ico { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); }
@@ -315,7 +330,7 @@ import { ToastService } from '../../services/toast.service';
       cursor: pointer; transition: 0.2s; background: var(--bg); color: var(--muted);
       display: flex; align-items: center; justify-content: center; gap: 7px;
     }
-    .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px var(--primary-glow); }
+    .tab-btn.active {border-bottom: 2px solid var(--primary); color: var(--primary); }
     .tab-count { background: rgba(255,255,255,0.25); border-radius: 6px; padding: 1px 7px; font-size: 0.7rem; }
 
     .list-wrap { flex: 1; overflow-y: auto; padding: 8px 10px 16px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
@@ -370,7 +385,7 @@ import { ToastService } from '../../services/toast.service';
     .detail-head {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 28px 32px;
+      padding: 20px 20px;
       display: flex;
       align-items: flex-start;
       gap: 20px;
@@ -386,7 +401,7 @@ import { ToastService } from '../../services/toast.service';
       box-shadow: 0 4px 16px rgba(59,91,219,0.12);
     }
     .detail-identity { flex: 1; }
-    .detail-name { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+    .detail-name { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 500; color: var(--text); letter-spacing: -0.3px; }
     .detail-email { font-size: 0.875rem; color: var(--primary); font-weight: 500; margin-top: 3px; }
     .detail-pid { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
     .detail-status-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
@@ -424,9 +439,9 @@ import { ToastService } from '../../services/toast.service';
     .pay-val.paid { color: var(--green); }
 
     /* Profile section */
-    .section-block { padding: 28px 32px; flex: 1; }
+    .section-block { padding: 20px 20px; flex: 1; }
     .section-label { font-family: 'Sora', sans-serif; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 18px; }
-    .profile-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: var(--surface); border-radius: 20px; padding: 24px; border: 1px solid var(--border); }
+    .profile-grid { display: flex; grid-template-columns: repeat(5, 1fr); gap: 40px; background: var(--surface); border-radius: 20px; padding: 24px; border: 1px solid var(--border); }
     .pf-full { grid-column: 1 / -1; }
     .pf-item { display: flex; flex-direction: column; gap: 5px; }
     .pf-lbl { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); }
@@ -536,6 +551,7 @@ export class PatientRequestsComponent implements OnInit {
   showRescheduleModal = false;
   selectedRequest: any = null;
   requestToDecline: number | null = null;
+  availableSlots: any[] = [];
 
   newDate = '';
   newTime = '';
@@ -598,19 +614,94 @@ export class PatientRequestsComponent implements OnInit {
   openReschedule(req: any) {
     this.selectedRequest = req;
     this.newDate = req.appointment_date?.split('T')[0];
-    this.newTime = req.start_time + " - " + req.end_time;
+    this.loadSlots();
     this.showRescheduleModal = true;
   }
 
-  executeReschedule() {
-    if (!this.newDate || !this.newTime) return;
-    this.appointmentService.rescheduleAppointment(this.selectedRequest.id, { date: this.newDate, time: this.newTime }).subscribe({
-      next: () => { this.toast.success('Rescheduled successfully'); this.showRescheduleModal = false; this.fetchRequests(); },
-      error: () => this.toast.error('Reschedule failed')
-    });
+  loadSlots() {
+
+    if (!this.selectedRequest?.doctor_id || !this.newDate) {
+      this.toast.error("Doctor or date missing");
+      return;
+    }
+
+    this.appointmentService
+      .getAvailableSlots(
+        this.selectedRequest.doctor_id,
+        this.newDate
+      )
+      .subscribe({
+
+        next: (res: any[]) => {
+
+          console.log("Available slots:", res);
+
+          this.availableSlots = res.map((slot: any) => {
+
+            const start = new Date(slot.start_time)
+              .toISOString()
+              .substring(11, 16);
+
+            const end = new Date(slot.end_time)
+              .toISOString()
+              .substring(11, 16);
+
+            return {
+
+              start,
+
+              end,
+
+              timeSlot: `${start}-${end}`
+
+            };
+
+          });
+
+        },
+
+        error: () => {
+
+          this.toast.error("Failed to load slots");
+
+        }
+
+      });
+
   }
 
-  markCompleted(id: number) { this.updateStatus(id, 'completed'); }
+  executeReschedule() {
+
+    if (!this.newDate || !this.newTime) {
+      this.toast.error('Select date & time');
+      return;
+    }
+
+    this.appointmentService.rescheduleAppointment(
+      this.selectedRequest.id,
+      {
+        date: this.newDate,
+        timeSlot: this.newTime   // ✅ FIXED
+      }
+    ).subscribe({
+
+      next: () => {
+        this.toast.success('Rescheduled successfully');
+        this.showRescheduleModal = false;
+        this.fetchRequests();
+      },
+
+      error: (err) => {
+        this.toast.error(
+          err?.error?.message || 'Reschedule failed'
+        );
+      }
+
+    });
+
+  }
+
+  markCompleted(id: number) { this.updateStatus(id, 'completed'); this.cdr.detectChanges(); }
   joinCall(req: any) {
     if (req.meeting_link) window.open(req.meeting_link, '_blank');
     else this.toast.warning('Meeting link not available yet');

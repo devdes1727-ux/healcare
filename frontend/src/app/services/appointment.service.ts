@@ -36,7 +36,19 @@ export class AppointmentService {
   }
 
   rescheduleAppointment(id: number, data: any) {
-    return this.http.put(`/api/appointments/reschedule/${id}`, data
+    return this.http.put(
+      `${this.apiUrl}/reschedule/${id}`,
+      data,
+      { headers: this.getHeaders() }
     );
+  }
+
+  getAvailableSlots(doctorId: number, date: string) {
+
+    return this.http.get(
+      `${this.apiUrl}/available-slots/${doctorId}/${date}`,
+      { headers: this.getHeaders() }
+    );
+
   }
 }

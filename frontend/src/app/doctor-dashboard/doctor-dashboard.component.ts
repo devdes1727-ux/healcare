@@ -104,7 +104,7 @@ import { AuthService } from '../services/auth.service';
     }
 
     .dashboard-header {
-      padding: 1.5rem 2rem;
+      padding: 20px 20px;
       background-color: var(--bg-main);
       border-bottom: 1px solid var(--border-light);
     }
@@ -118,7 +118,6 @@ import { AuthService } from '../services/auth.service';
     .content-scroll {
       flex: 1;
       overflow-y: auto;
-      padding: 2rem;
     }
 
     @media (max-width: 768px) {
