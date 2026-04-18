@@ -49,43 +49,22 @@ class="form-panel"
 
 <div class="day-checkbox-group">
 
-<label
-*ngFor="let d of dayNames"
-class="day-checkbox">
+<label *ngFor="let d of dayNames" class="day-checkbox">
 
-<input
-type="checkbox"
-[value]="d"
-(change)="toggleDaySelection(d,$event)">
-
+<input type="checkbox" [value]="d" (change)="toggleDaySelection(d,$event)">
 {{ d }}
-
 </label>
 
 </div>
 
+<div class="day-checkbox-group">
+  <label>Start Time</label>
+  <input type="time" [(ngModel)]="newSlot.startTime">
+  <label>End Time</label>
+  <input type="time" [(ngModel)]="newSlot.endTime">
+  <button class="add-chip-btn" (click)="addSlotToList()">Add Time Slot</button>
+</div>
 
-<label>Start Time</label>
-
-<input
-type="time"
-[(ngModel)]="newSlot.startTime">
-
-
-<label>End Time</label>
-
-<input
-type="time"
-[(ngModel)]="newSlot.endTime">
-
-
-<button
-class="add-chip-btn"
-(click)="addSlotToList()">
-
-Add Time Slot
-
-</button>
 
 
 
@@ -95,16 +74,11 @@ Add Time Slot
 class="chip-container"
 *ngIf="pendingSlots.length">
 
-<div
-class="slot-chip"
-*ngFor="let slot of pendingSlots; let i=index">
+<div class="slot-chip" *ngFor="let slot of pendingSlots; let i=index">
 
 {{slot.startTime}} → {{slot.endTime}}
 
-<button
-(click)="removePendingSlot(i)">
-✕
-</button>
+<button (click)="removePendingSlot(i)">✕</button>
 
 </div>
 
@@ -360,6 +334,8 @@ display:flex;
 gap:20px;
 margin-bottom:15px;
 padding:10px 20px;
+background-color: white;
+border-radius: 12px;
 }
 
 .grid{

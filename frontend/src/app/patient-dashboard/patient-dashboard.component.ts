@@ -64,7 +64,7 @@ interface MenuItem {
 
 /* SIDEBAR */
 .sidebar{
-  width:260px;
+  width:220px;
   background:#fff;
   border-right:1px solid #eee;
   display:flex;

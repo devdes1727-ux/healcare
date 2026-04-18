@@ -49,7 +49,7 @@ import { AuthService } from '../services/auth.service';
     }
 
     .sidebar {
-      width: 260px;
+      width: 220px;
       background-color: var(--bg-card);
       border-right: 1px solid var(--border-light);
       display: flex;
@@ -67,20 +67,19 @@ import { AuthService } from '../services/auth.service';
     }
 
     .sidebar-nav {
-      padding: 1rem 0;
+      padding: 20px 0;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 10px;
     }
 
     .nav-item {
-      padding: 0.75rem 1.5rem;
+      padding: 10px 20px;
       color: var(--text-muted);
       text-decoration: none;
       font-weight: 500;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
       transition: all 0.2s;
       border-left: 3px solid transparent;
     }

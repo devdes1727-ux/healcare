@@ -334,31 +334,38 @@ Join as Doctor
 
 <section class="section">
 
-<h2>Patient Reviews</h2>
+  <h2>Patient Reviews</h2>
 
-<div class="testimonial-grid">
+  <div class="testimonial-grid">
 
-<div
-class="testimonial-card"
-*ngFor="let t of testimonials"
->
+    <div
+      class="testimonial-card"
+      *ngFor="let t of testimonials"
+    >
 
-<div class="stars">
-★★★★★
-</div>
+      <div class="testimonial-header">
 
-<p>
-"{{t.text}}"
-</p>
+        <img src="assets/girl.jpg" alt="profile" class="profile-img"/>
 
-<strong>{{t.name}}</strong>
+        <div>
+          <strong>{{t.name}}</strong>
 
-</div>
+          <div class="stars">
+            ★★★★★
+          </div>
+        </div>
 
-</div>
+      </div>
+
+      <p>
+        "{{t.text}}"
+      </p>
+
+    </div>
+
+  </div>
 
 </section>
-
 
 
 
@@ -641,6 +648,24 @@ border-radius:10px;
 box-shadow:0 3px 12px rgba(0,0,0,.08);
 }
 
+.testimonial-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.profile-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.stars {
+  color: #ffc107;
+  font-size: 14px;
+}
 
 .feature-grid{
 display:grid;
@@ -715,6 +740,8 @@ export class LandingComponent implements OnInit {
   ngOnInit() {
     this.loadDoctors();
   }
+
+
 
   loadDoctors() {
 
@@ -822,3 +849,4 @@ export class LandingComponent implements OnInit {
   }
 
 }
+

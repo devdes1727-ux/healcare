@@ -309,8 +309,7 @@ declare var window: any;
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     .page-root {
-      min-height: 100vh;
-      padding: 32px 24px 60px;
+      padding: 20px;
       background: var(--c-bg);
       background-image: radial-gradient(ellipse at 20% 10%, rgba(59,91,219,0.06) 0%, transparent 50%),
                         radial-gradient(ellipse at 80% 80%, rgba(245,158,11,0.04) 0%, transparent 50%);
@@ -574,7 +573,7 @@ declare var window: any;
       .summary-item:nth-child(2) { border-right: none; }
     }
     @media (max-width: 480px) {
-      .page-root { padding: 16px 12px 60px; }
+      .page-root { padding: 16px }
       .booking-body { padding: 20px; }
       .summary-strip { grid-template-columns: 1fr 1fr; }
     }

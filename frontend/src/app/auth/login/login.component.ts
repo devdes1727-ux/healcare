@@ -31,7 +31,19 @@ import { ToastService } from '../../services/toast.service';
             <label>Password</label>
             <div class="input-wrapper">
               <span class="input-icon">🔒</span>
-              <input type="password" [(ngModel)]="password" name="password" placeholder="••••••••" required>
+
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="password"
+                name="password"
+                placeholder="••••••••"
+                required
+              >
+
+              <span class="eye-icon" (click)="togglePassword()">
+                {{ showPassword ? '🙈' : '👁️' }}
+              </span>
+
             </div>
           </div>
 
@@ -62,6 +74,11 @@ import { ToastService } from '../../services/toast.service';
     .auth-wrapper { min-height: 100vh; background: radial-gradient(circle at top right, #EEF2FF 0%, #E0E7FF 40%, #DBEAFE 100%); padding: 2rem; }
     .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 450px; padding: 3rem; }
     
+    .eye-icon { position: absolute; right: 16px; top: 14px; cursor: pointer; opacity: 0.6; font-size: 18px; }
+    .eye-icon:hover { opacity: 1; }
+    .eye-icon { position: absolute; right: 16px; top: 14px; cursor: pointer; opacity: 0.6; transition: 0.2s; }
+    .eye-icon:hover { opacity: 1; }
+
     .auth-header { text-align: center; margin-bottom: 3rem; }
     .logo-box { width: 64px; height: 64px; background: white; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
     .auth-title { font-size: 2.25rem; font-weight: 900; color: #1E293B; margin: 0; }
@@ -101,10 +118,16 @@ export class LoginComponent {
   loading = false;
 
   constructor(
-    private authService: AuthService, 
+    private authService: AuthService,
     private router: Router,
     private toast: ToastService
-  ) {}
+  ) { }
+
+  showPassword = false;
+
+  togglePassword() {
+    this.showPassword = !this.showPassword;
+  }
 
   onSubmit() {
     this.loading = true;
