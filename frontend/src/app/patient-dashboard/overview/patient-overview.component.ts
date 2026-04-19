@@ -1,451 +1,163 @@
-import {
-  Component,
-  OnInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef
-} from '@angular/core';
-
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-
 import { AppointmentService } from '../../services/appointment.service';
-import { ToastService } from '../../services/toast.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-patient-overview',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-
   template: `
-
-<div class="dashboard-wrapper">
-
-<!-- Stats Cards -->
-
-<div class="stats-grid">
-
-<div class="stat-card">
-<div class="stat-icon blue">📅</div>
-
-<div>
-<h4>Upcoming Appointments</h4>
-<p class="stat-value">{{ upcomingCount }}</p>
-</div>
-</div>
-
-
-<div class="stat-card">
-<div class="stat-icon green">✅</div>
-
-<div>
-<h4>Completed Visits</h4>
-<p class="stat-value">{{ completedCount }}</p>
-</div>
-</div>
-
-
-<div class="stat-card clickable" routerLink="/patient-dashboard/doctors">
-<div class="stat-icon purple">🔍</div>
-
-<div>
-<h4 class="primary">Find Doctor</h4>
-<p class="small">Search directory →</p>
-</div>
-</div>
-
-</div>
-
-
-
-<!-- Next Appointment Card -->
-
-<div class="card">
-
-<div class="card-header">
-
-<h3>Next Appointment</h3>
-
-<a routerLink="../appointments">View all</a>
-
-</div>
-
-
-
-<!-- Loading -->
-
-<div *ngIf="loading" class="loading">
-
-Loading appointment...
-
-</div>
-
-
-
-<!-- Empty -->
-
-<div *ngIf="!loading && !nextAppointment" class="empty">
-
-No upcoming appointments found
-
-</div>
-
-
-
-<!-- Appointment -->
-
-<div *ngIf="nextAppointment" class="appointment-box">
-
-<div class="appointment-left">
-
-<div class="date-box">
-
-<span>
-
-{{ nextAppointment.appointment_date | date:'MMM' }}
-
-</span>
-
-<b>
-
-{{ nextAppointment.appointment_date | date:'dd' }}
-
-</b>
-
-</div>
-
-
-
-<div>
-
-<h4>
-
-Dr. {{ nextAppointment.doctorName }}
-
-</h4>
-
-<p>
-
-{{ nextAppointment.specialization }}
-
-• {{ nextAppointment.consultation_type }}
-
-</p>
-
-<p class="time">
-
-{{ nextAppointment.start_time + " - " + nextAppointment.end_time }}
-
-</p>
-
-</div>
-
-</div>
-
-
-
-<div class="actions">
-
-<button
-*ngIf="showJoinBtn()"
-class="btn primary"
-(click)="joinMeeting()"
->
-
-Join Meeting
-
-</button>
-
-
-<button
-class="btn outline"
-routerLink="../appointments"
->
-
-Manage
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
+    <div class="patient-dash">
+      <header class="dash-hero">
+        <div class="welcome-text">
+           <h1>Hello, {{ currentUser?.name }}! 👋</h1>
+           <p>Stay on top of your health journey. You have <b>{{ upcomingCount }}</b> appointments this week.</p>
+        </div>
+        <div class="action-btns">
+           <button class="btn-primary" routerLink="doctors">Find New Doctor</button>
+        </div>
+      </header>
+
+      <div class="main-grid">
+         <!-- LEFT: STATS & NEXT APPT -->
+         <div class="left-col">
+            <div class="stats-cards">
+               <div class="s-card green">
+                  <strong>{{ totalVisits }}</strong>
+                  <p>Consultations</p>
+               </div>
+               <div class="s-card blue">
+                  <strong>{{ upcomingCount }}</strong>
+                  <p>Schedules</p>
+               </div>
+               <div class="s-card purple">
+                  <strong>2</strong>
+                  <p>Reports</p>
+               </div>
+            </div>
+
+            <div class="next-apt-card" *ngIf="nextApt">
+               <label>Next Appointment</label>
+               <div class="apt-content">
+                  <div class="doc-avatar">{{ nextApt.doctorName[0] }}</div>
+                  <div class="details">
+                     <h4>Dr. {{ nextApt.doctorName }}</h4>
+                     <p>{{ nextApt.specialization }} • {{ nextApt.consultation_type | titlecase }}</p>
+                     <div class="time-box">
+                        📅 {{ nextApt.appointment_date | date }} • ⏰ {{ nextApt.start_time }}
+                     </div>
+                  </div>
+                  <button class="btn-check" routerLink="appointments">Details</button>
+               </div>
+            </div>
+
+            <div class="empty-next" *ngIf="!nextApt">
+               <h4>No upcoming appointments</h4>
+               <p>Your schedule is clear. Need a checkup?</p>
+               <button routerLink="doctors">Book Now</button>
+            </div>
+         </div>
+
+         <!-- RIGHT: QUICK TIPS / HISTORY -->
+         <div class="right-col">
+            <div class="health-tips">
+               <h3>Health Tips for You</h3>
+               <div class="tip-item">
+                  <span>🍎</span>
+                  <p>An apple a day keeps the doctor away. Keep eating healthy!</p>
+               </div>
+               <div class="tip-item">
+                  <span>💧</span>
+                  <p>Don't forget to drink 3L of water today for better metabolism.</p>
+               </div>
+            </div>
+
+            <div class="quick-links">
+               <h3>My Services</h3>
+               <a routerLink="appointments" class="link-item">
+                  <span>📅</span> My Schedule
+               </a>
+               <a class="link-item">
+                  <span>📄</span> Medical Records
+               </a>
+               <a class="link-item">
+                  <span>💳</span> Billing History
+               </a>
+            </div>
+         </div>
+      </div>
+    </div>
   `,
-
   styles: [`
+    .patient-dash { padding: 40px; background: #fbfcfe; min-height: 100vh; font-family: 'Outfit', sans-serif; }
+    .dash-hero { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+    .welcome-text h1 { margin: 0; font-size: 34px; font-weight: 800; color: #1e293b; }
+    .welcome-text p { margin: 8px 0 0; color: #64748b; font-size: 17px; }
+    .btn-primary { background: #2563eb; color: white; border: none; padding: 14px 25px; border-radius: 14px; font-weight: 700; cursor: pointer; font-size: 15px; }
 
-.dashboard-wrapper{
-padding:20px;
-}
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 40px; }
+    .stats-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+    .s-card { padding: 25px; border-radius: 24px; text-align: center; color: white; }
+    .s-card strong { font-size: 32px; font-weight: 800; display: block; }
+    .s-card p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }
+    .green { background: #10b981; }
+    .blue { background: #3b82f6; }
+    .purple { background: #8b5cf6; }
 
+    .next-apt-card { background: white; padding: 30px; border-radius: 30px; border: 1px solid #f1f5f9; box-shadow: 0 15px 40px rgba(0,0,0,0.03); }
+    .next-apt-card label { font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; display: block; }
+    .apt-content { display: flex; align-items: center; gap: 25px; }
+    .doc-avatar { width: 70px; height: 70px; background: #eef2ff; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #2563eb; }
+    .details h4 { margin: 0; font-size: 20px; }
+    .details p { margin: 5px 0; color: #64748b; font-size: 15px; }
+    .time-box { background: #f8fafc; padding: 6px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; color: #1e293b; display: inline-block; margin-top: 10px; }
+    .btn-check { margin-left: auto; background: #f1f5f9; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; color: #1e293b; }
 
-.stats-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:20px;
-margin-bottom:25px;
-}
+    .empty-next { background: white; padding: 40px; border-radius: 30px; text-align: center; border: 2px dashed #e2e8f0; }
+    .empty-next h4 { margin: 0; font-size: 20px; }
+    .empty-next p { color: #64748b; margin: 10px 0 20px; }
+    .empty-next button { background: #1e293b; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; }
 
+    .health-tips, .quick-links { background: white; padding: 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; margin-bottom: 30px; }
+    .health-tips h3, .quick-links h3 { font-size: 19px; margin-top: 0; margin-bottom: 20px; }
+    .tip-item { display: flex; gap: 15px; margin-bottom: 15px; }
+    .tip-item span { font-size: 24px; }
+    .tip-item p { margin: 0; font-size: 14px; color: #475569; line-height: 1.5; }
 
-.stat-card{
-background:white;
-border-radius:12px;
-padding:18px;
-display:flex;
-gap:15px;
-align-items:center;
-box-shadow:0 2px 8px rgba(0,0,0,0.06);
-}
+    .link-item { display: flex; align-items: center; gap: 15px; padding: 15px; border-radius: 15px; background: #f8fafc; margin-bottom: 10px; text-decoration: none; color: #1e293b; font-weight: 700; font-size: 14px; transition: .2s; }
+    .link-item:hover { background: #f1f5f9; transform: translateX(5px); }
 
-
-.stat-card.clickable{
-cursor:pointer;
-transition:.2s;
-}
-
-
-.stat-card.clickable:hover{
-transform:translateY(-3px);
-}
-
-
-.stat-icon{
-width:45px;
-height:45px;
-border-radius:8px;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:20px;
-}
-
-
-.blue{background:#e3f2fd;color:#1976d2;}
-.green{background:#e8f5e9;color:#2e7d32;}
-.purple{background:#f3e5f5;color:#7b1fa2;}
-
-
-.stat-value{
-font-size:26px;
-font-weight:700;
-margin:0;
-}
-
-
-.card{
-background:white;
-border-radius:14px;
-padding:20px;
-box-shadow:0 3px 12px rgba(0,0,0,0.08);
-}
-
-
-.card-header{
-display:flex;
-justify-content:space-between;
-margin-bottom:15px;
-}
-
-
-.loading,
-.empty{
-text-align:center;
-padding:25px;
-color:#777;
-}
-
-
-.appointment-box{
-display:flex;
-justify-content:space-between;
-align-items:center;
-flex-wrap:wrap;
-gap:20px;
-}
-
-
-.appointment-left{
-display:flex;
-gap:15px;
-align-items:center;
-}
-
-
-.date-box{
-background:#f5f7fa;
-padding:10px;
-border-radius:10px;
-text-align:center;
-min-width:55px;
-}
-
-
-.date-box span{
-display:block;
-font-size:12px;
-}
-
-
-.date-box b{
-font-size:22px;
-}
-
-
-.time{
-margin-top:5px;
-font-weight:600;
-}
-
-
-.actions{
-display:flex;
-gap:10px;
-}
-
-
-.btn{
-padding:7px 14px;
-border-radius:8px;
-cursor:pointer;
-border:none;
-}
-
-
-.primary{
-color:#1976d2;
-}
-
-
-.outline{
-border:1px solid #ccc;
-background:white;
-}
-
-
-.primary-text{
-color:#1976d2;
-}
-
-
-.small{
-font-size:13px;
-color:#666;
-}
-
+    @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
   `]
 })
-
 export class PatientOverviewComponent implements OnInit {
-
+  currentUser: any;
+  nextApt: any = null;
+  totalVisits = 0;
   upcomingCount = 0;
-  completedCount = 0;
-
-  nextAppointment: any = null;
-
-  loading = true;
-
 
   constructor(
+    private auth: AuthService,
     private appointmentService: AppointmentService,
-    private toast: ToastService,
     private cdr: ChangeDetectorRef
-  ) { }
-
-
+  ) {}
 
   ngOnInit() {
-
-    this.loadAppointments();
-
+    this.currentUser = this.auth.getUser();
+    this.loadData();
   }
 
-
-
-  loadAppointments() {
-
-    this.appointmentService
-      .getPatientAppointments()
-      .subscribe({
-
-        next: (res: any[]) => {
-
-          const today = new Date();
-
-          const upcoming = res.filter(a =>
-            a.status === "confirmed" &&
-            new Date(a.appointment_date) >= today
-          );
-
-
-          const completed = res.filter(a =>
-            a.status === "completed"
-          );
-
-
-          this.upcomingCount = upcoming.length;
-
-          this.completedCount = completed.length;
-
-
-          this.nextAppointment = upcoming.length
-            ? upcoming.sort(
-              (a, b) =>
-                new Date(a.appointment_date).getTime()
-                -
-                new Date(b.appointment_date).getTime()
-            )[0]
-            : null;
-
-
-          this.loading = false;
-
-          this.cdr.detectChanges();
-
-        },
-
-        error: (err) => {
-
-          this.loading = false;
-
-          this.toast.error(
-            err?.error?.message ||
-            "Failed loading overview"
-          );
-
-          this.cdr.detectChanges();
-
-        }
-
-      });
-
+  loadData() {
+    this.appointmentService.getPatientAppointments().subscribe((res: any[]) => {
+      this.totalVisits = res.filter(a => a.status === 'completed').length;
+      const upcoming = res.filter(a => a.status === 'confirmed' || a.status === 'pending')
+                         .sort((a,b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime());
+      
+      this.upcomingCount = upcoming.length;
+      this.nextApt = upcoming[0] || null;
+      this.cdr.detectChanges();
+    });
   }
-
-
-
-  showJoinBtn() {
-
-    return (
-
-      this.nextAppointment?.consultation_type === "online"
-      &&
-      this.nextAppointment?.meeting_link
-
-    );
-
-  }
-
-
-
-  joinMeeting() {
-
-    window.open(
-      this.nextAppointment.meeting_link,
-      "_blank"
-    );
-
-  }
-
 }

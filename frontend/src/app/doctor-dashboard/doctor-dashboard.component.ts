@@ -27,6 +27,9 @@ import { AuthService } from '../services/auth.service';
           <a routerLink="schedule" routerLinkActive="active" class="nav-item">
             <i class="icon-calendar"></i> Schedule Manager
           </a>
+          <a routerLink="settings" routerLinkActive="active" class="nav-item">
+            <i class="icon-settings"></i> Account Settings
+          </a>
         </nav>
       </aside>
 

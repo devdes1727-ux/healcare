@@ -65,6 +65,12 @@ export const routes: Routes = [
             .then(m => m.ScheduleManagerComponent)
       },
       {
+        path: 'settings',
+        loadComponent: () =>
+          import('./profile-settings/profile-settings.component')
+            .then(m => m.ProfileSettingsComponent)
+      },
+      {
         path: 'doctors',
         loadComponent: () =>
           import('./patient-dashboard/find-doctors/find-doctors.component')
@@ -135,6 +141,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./landing/landing.component')
         .then(m => m.LandingComponent)
+  },
+
+  {
+    path: 'doctor/:slug',
+    loadComponent: () =>
+      import('./public-doctor-profile/public-doctor-profile.component')
+        .then(m => m.PublicDoctorProfileComponent)
   },
 
   // ⚠️ KEEP THIS LAST ALWAYS

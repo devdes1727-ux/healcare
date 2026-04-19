@@ -54,7 +54,7 @@
               <a routerLink="/patient-dashboard/appointments" class="dropdown-item">
                 <i class="icon-calendar"></i> My Appointments
               </a>
-              <a routerLink="/profile-settings" class="dropdown-item">
+              <a [routerLink]="currentUser.role === 'doctor' ? '/doctor-dashboard/settings' : '/patient-dashboard/settings'" class="dropdown-item">
                 <i class="icon-user"></i> Profile Settings
               </a>
             </ng-container>
@@ -69,7 +69,7 @@
               <a routerLink="/doctor-dashboard/schedule" class="dropdown-item">
                 <i class="icon-clock"></i> Schedule Manager
               </a>
-              <a routerLink="/profile-settings" class="dropdown-item">
+              <a [routerLink]="currentUser.role === 'doctor' ? '/doctor-dashboard/settings' : '/patient-dashboard/settings'" class="dropdown-item">
                 <i class="icon-user"></i> Profile Settings
               </a>
             </ng-container>

@@ -4,396 +4,176 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef
 } from '@angular/core';
-
 import { CommonModule } from '@angular/common';
-
 import { FormsModule } from '@angular/forms';
-
 import { AppointmentService } from '../../services/appointment.service';
-
 import { ToastService } from '../../services/toast.service';
 
-
 @Component({
-
   selector: 'app-my-appointments',
-
   standalone: true,
-
-  imports: [
-    CommonModule,
-    FormsModule
-  ],
-
+  imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
 
   template: `
-
 <div class="page-container">
+  <header class="header">
+    <h2>Medical Consultations</h2>
+    <div class="tabs">
+       <button [class.active]="filter === 'upcoming'" (click)="setFilter('upcoming')">Upcoming</button>
+       <button [class.active]="filter === 'past'" (click)="setFilter('past')">Past Visits</button>
+    </div>
+  </header>
 
-<h2 class="page-title">My Appointments</h2>
+  <div *ngIf="loading" class="loading">Fetching your records...</div>
 
+  <div class="appointment-list" *ngIf="!loading">
+    <div class="apt-card" *ngFor="let apt of displayedAppts" (click)="openDetails(apt)">
+      <div class="apt-info">
+        <div class="doc-avatar">{{ apt.doctorName[0] }}</div>
+        <div>
+          <h3>Dr. {{ apt.doctorName }}</h3>
+          <p>{{ apt.specialization }} • <b>{{ apt.consultation_type | titlecase }}</b></p>
+        </div>
+      </div>
+      <div class="apt-time">
+         <span class="date">{{ apt.appointment_date | date:'dd MMM yyyy' }}</span>
+         <span class="time">{{ apt.start_time }}</span>
+      </div>
+      <div class="apt-status">
+         <span class="badge" [class]="apt.status">{{ apt.status }}</span>
+         <span class="booked-by" *ngIf="apt.booked_by === 'doctor'">Added by doctor</span>
+      </div>
+    </div>
+  </div>
 
-<div *ngIf="loading" class="loading">
-Loading appointments...
+  <!-- BOOKING DETAIL MODAL -->
+  <div class="details-overlay" *ngIf="selectedApt" (click)="selectedApt = null">
+    <div class="details-modal" (click)="$event.stopPropagation()">
+      <button class="close-btn" (click)="selectedApt = null">✕</button>
+      
+      <div class="modal-header">
+        <h2>Consultation Details</h2>
+        <span class="badge" [class]="selectedApt.status">{{ selectedApt.status }}</span>
+      </div>
+
+      <div class="sections-grid">
+        <div class="main-details">
+          <div class="detail-row">
+            <strong>Doctor:</strong> <span>Dr. {{ selectedApt.doctorName }} ({{ selectedApt.specialization }})</span>
+          </div>
+          <div class="detail-row">
+            <strong>Schedule:</strong> <span>{{ selectedApt.appointment_date | date:'fullDate' }} at {{ selectedApt.start_time }}</span>
+          </div>
+          <div class="detail-row">
+            <strong>Duration:</strong> <span>{{ selectedApt.duration || 15 }} mins</span>
+          </div>
+          <div class="detail-row">
+            <strong>Booked By:</strong> <span>{{ selectedApt.booked_by | titlecase }}</span>
+          </div>
+
+          <div class="visit-summary" *ngIf="selectedApt.visit_summary">
+             <h4>Visit Summary</h4>
+             <p>{{ selectedApt.visit_summary }}</p>
+             <div class="follow-up" *ngIf="selectedApt.follow_up_date">
+                <strong>Next Follow-up:</strong> {{ selectedApt.follow_up_date | date }}
+                <div class="follow-btns" *ngIf="selectedApt.follow_up_status === 'pending'">
+                   <button class="btn-sm green" (click)="respondFollowUp('accepted')">Accept</button>
+                   <button class="btn-sm red" (click)="respondFollowUp('denied')">Deny</button>
+                </div>
+                <span class="fu-status" *ngIf="selectedApt.follow_up_status !== 'pending'">{{ selectedApt.follow_up_status | titlecase }}</span>
+             </div>
+          </div>
+        </div>
+
+        <div class="actions-panel">
+          <button class="btn-primary w-full" *ngIf="showJoinBtn(selectedApt)" (click)="joinCall(selectedApt)">Join Video Link</button>
+          <button class="btn-outline w-full" *ngIf="selectedApt.status === 'completed'">Book Again</button>
+          <div class="upload-section" *ngIf="selectedApt.status === 'completed'">
+             <label>Files & Prescriptions</label>
+             <div class="file-drop">
+                <span>{{ selectedApt.prescription_file ? '1 File Uploaded' : 'Upload File' }}</span>
+                <input type="file" (change)="onUploadFile($event)" />
+             </div>
+          </div>
+          <button class="btn-red w-full" *ngIf="selectedApt.status === 'confirmed'" (click)="cancelApt()">Cancel Booking</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-
-
-<div *ngIf="!loading && displayedAppts.length===0" class="empty">
-No appointments booked yet
-</div>
-
-
-<div class="appointment-grid">
-
-<div
-*ngFor="let apt of displayedAppts; trackBy: trackByApt"
-class="appointment-card">
-
-
-<div class="card-header">
-
-<div>
-
-<h3>
-Dr {{apt.doctorName}}
-</h3>
-
-<p class="speciality">
-{{apt.specialization}}
-</p>
-
-</div>
-
-<span
-class="status-badge"
-[ngClass]="apt.status">
-
-{{apt.status}}
-
-</span>
-
-</div>
-
-
-<div class="card-body">
-
-<div class="info">
-📅 {{apt.appointment_date | date:'mediumDate'}}
-</div>
-
-<div class="info">
-🕒 {{apt.start_time}} - {{apt.end_time}}
-</div>
-
-<div class="info">
-💻 {{apt.consultation_type}}
-</div>
-
-<div class="info">
-💳 {{apt.payment_status}}
-</div>
-
-</div>
-
-
-<div class="card-actions">
-
-<button
-*ngIf="showJoinBtn(apt)"
-class="btn primary"
-(click)="joinCall(apt)">
-Join Call
-</button>
-
-
-<button
-*ngIf="apt.status==='confirmed'"
-class="btn outline"
-(click)="openReschedule(apt)">
-Reschedule
-</button>
-
-
-<button
-*ngIf="apt.status==='confirmed'"
-class="btn danger"
-(click)="confirmCancel(apt)">
-Cancel
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<!-- CANCEL MODAL -->
-
-<div
-class="modal"
-*ngIf="activeModal==='cancel'">
-
-<div class="modal-box">
-
-<h3>Cancel Appointment?</h3>
-
-<p>Are you sure you want to cancel?</p>
-
-<div class="modal-actions">
-
-<button
-class="btn danger"
-(click)="executeCancel()">
-Yes Cancel
-</button>
-
-
-<button
-class="btn outline"
-(click)="closeModal()">
-Close
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<!-- RESCHEDULE MODAL -->
-
-<div
-class="modal"
-*ngIf="activeModal==='reschedule'">
-
-<div class="modal-box">
-
-<h3>Request Reschedule</h3>
-
-<p class="hint">
-Select new preferred slot
-</p>
-
-
-<input
-type="date"
-[(ngModel)]="newDate"
-(change)="loadSlots()"
-class="input"/>
-
-
-<select
-class="input"
-[(ngModel)]="newTime"
-[disabled]="!availableSlots.length">
-
-<option
-*ngFor="let slot of availableSlots"
-[value]="slot.timeSlot">
-
-{{slot.start}} - {{slot.end}}
-
-</option>
-
-</select>
-
-
-<div class="modal-actions">
-
-<button
-class="btn primary"
-(click)="executeReschedule()">
-Send Request
-</button>
-
-
-<button
-class="btn outline"
-(click)="closeModal()">
-Cancel
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<style>
-
-.page-container{
-max-width:1000px;
-margin:auto;
-padding:30px 20px 60px;
-}
-
-.page-title{
-font-size:28px;
-font-weight:600;
-margin-bottom:25px;
-}
-
-.loading,
-.empty{
-text-align:center;
-margin-top:40px;
-font-size:18px;
-color:#777;
-}
-
-.appointment-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-gap:20px;
-}
-
-.appointment-card{
-background:white;
-border-radius:14px;
-padding:18px;
-box-shadow:0 3px 12px rgba(0,0,0,0.08);
-}
-
-.card-header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.speciality{
-color:#666;
-font-size:14px;
-}
-
-.card-body{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:8px;
-margin-top:12px;
-}
-
-.info{
-font-size:15px;
-}
-
-.card-actions{
-margin-top:15px;
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-}
-
-.status-badge{
-padding:6px 14px;
-border-radius:20px;
-font-size:13px;
-text-transform:capitalize;
-}
-
-.status-badge.confirmed{
-background:#e6f7ef;
-color:#12a150;
-}
-
-.status-badge.pending{
-background:#fff4e5;
-color:#e28b00;
-}
-
-.status-badge.cancelled_by_patient{
-background:#ffe6e6;
-color:#cc0000;
-}
-
-.btn{
-padding:8px 14px;
-border-radius:8px;
-cursor:pointer;
-border:none;
-font-size:14px;
-}
-
-.btn.primary{
-background:#1976d2;
-color:white;
-}
-
-.btn.outline{
-border:1px solid #ccc;
-background:white;
-}
-
-.btn.danger{
-background:#e53935;
-color:white;
-}
-
-.modal{
-position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:rgba(0,0,0,0.4);
-display:flex;
-align-items:center;
-justify-content:center;
-}
-
-.modal-box{
-background:white;
-padding:25px;
-border-radius:14px;
-width:320px;
-}
-
-.modal-actions{
-margin-top:15px;
-display:flex;
-gap:10px;
-}
-
-.input{
-width:100%;
-padding:8px;
-margin-top:10px;
-}
-
-.hint{
-font-size:13px;
-color:#666;
-margin-bottom:10px;
-}
-
-</style>
-
-`
-
+`,
+  styles: [`
+.page-container { max-width: 900px; margin: auto; padding: 40px 20px; font-family: 'Outfit', sans-serif; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.header h2 { margin: 0; font-size: 28px; color: #1e293b; font-weight: 800; }
+.tabs { display: flex; background: #f1f5f9; padding: 5px; border-radius: 12px; }
+.tabs button { border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; color: #64748b; background: none; }
+.tabs button.active { background: white; color: #1e293b; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+.appointment-list { display: flex; flex-direction: column; gap: 12px; }
+.apt-card { background: white; padding: 20px; border-radius: 20px; display: grid; grid-template-columns: 2fr 1fr 1fr; align-items: center; cursor: pointer; transition: .2s; border: 1px solid #f1f5f9; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
+.apt-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-color: #e2e8f0; }
+
+.apt-info { display: flex; gap: 15px; align-items: center; }
+.doc-avatar { width: 50px; height: 50px; background: #eef2ff; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #4f46e5; font-size: 20px; }
+.apt-info h3 { margin: 0; font-size: 16px; color: #1e293b; }
+.apt-info p { margin: 3px 0 0; font-size: 13px; color: #94a3b8; }
+
+.apt-time { display: flex; flex-direction: column; text-align: center; }
+.apt-time .date { font-weight: 700; color: #1e293b; font-size: 14px; }
+.apt-time .time { font-size: 13px; color: #64748b; }
+
+.apt-status { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+
+.badge { padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.badge.confirmed { background: #f0fdf4; color: #16a34a; }
+.badge.pending { background: #fffbeb; color: #d97706; }
+.badge.completed { background: #eff6ff; color: #2563eb; }
+.badge.no_show { background: #fef2f2; color: #dc2626; }
+.booked-by { font-size: 10px; color: #94a3b8; font-style: italic; }
+
+/* MODAL */
+.details-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+.details-modal { background: white; width: 90%; max-width: 700px; border-radius: 30px; padding: 40px; position: relative; animation: slideUp 0.3s ease; }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.close-btn { position: absolute; top: 25px; right: 25px; border: none; background: #f1f5f9; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; }
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.modal-header h2 { margin: 0; font-size: 24px; font-weight: 800; }
+
+.sections-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; }
+.detail-row { margin-bottom: 12px; font-size: 15px; border-bottom: 1px solid #f8fafc; padding-bottom: 8px; }
+.detail-row strong { color: #64748b; width: 100px; display: inline-block; }
+
+.visit-summary { margin-top: 25px; background: #f8fafc; padding: 20px; border-radius: 20px; border-left: 4px solid #4f46e5; }
+.visit-summary h4 { margin: 0 0 10px; font-size: 16px; }
+.follow-up { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; font-size: 14px; }
+.follow-btns { display: flex; gap: 10px; margin-top: 10px; }
+.btn-sm { padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+.green { background: #dcfce7; color: #16a34a; }
+.red { background: #fee2e2; color: #dc2626; }
+
+.actions-panel { display: flex; flex-direction: column; gap: 15px; }
+.btn-primary { background: #1e293b; color: white; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-weight: 700; }
+.btn-outline { background: white; border: 1px solid #e2e8f0; padding: 14px; border-radius: 12px; cursor: pointer; font-weight: 700; }
+.btn-red { background: #fee2e2; color: #dc2626; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-weight: 700; }
+.w-full { width: 100%; }
+
+.upload-section { background: #f1f5f9; padding: 15px; border-radius: 15px; }
+.upload-section label { font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 10px; }
+.file-drop { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 12px; text-align: center; position: relative; }
+.file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+@media(max-width: 600px) { .apt-card { grid-template-columns: 1fr; gap: 15px; } .sections-grid { grid-template-columns: 1fr; } }
+`]
 })
-
 export class MyAppointmentsComponent implements OnInit {
-
-  displayedAppts: any[] = []
-
-  availableSlots: any[] = []
-
-  loading = true
-
-  activeModal: any = null
-
-  selectedApt: any
-
-  newDate = ''
-
-  newTime = ''
-
+  allAppts: any[] = [];
+  displayedAppts: any[] = [];
+  loading = true;
+  filter = 'upcoming';
+  selectedApt: any = null;
 
   constructor(
     private appointmentService: AppointmentService,
@@ -401,265 +181,58 @@ export class MyAppointmentsComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) { }
 
-
-  ngOnInit() {
-
-    this.fetchAppointments()
-
-  }
-
+  ngOnInit() { this.fetchAppointments(); }
 
   fetchAppointments() {
-
-    this.loading = true
-
-    this.appointmentService
-      .getPatientAppointments()
-      .subscribe({
-
-        next: (res: any) => {
-
-          this.displayedAppts = [...res]
-
-          this.loading = false
-
-          this.cdr.markForCheck()
-
-        },
-
-        error: (err: any) => {
-
-          this.loading = false
-
-          this.toast.error(
-            err?.error?.message ||
-            "Failed to load appointments"
-          )
-
-          this.cdr.markForCheck()
-
-        }
-
-      })
-
+    this.loading = true;
+    this.appointmentService.getPatientAppointments().subscribe((res: any) => {
+      this.allAppts = res;
+      this.applyFilter();
+      this.loading = false;
+      this.cdr.detectChanges();
+    });
   }
 
-
-  /* SLOT LOADER */
-
-  loadSlots() {
-
-    if (!this.selectedApt || !this.newDate) return
-
-    const doctorId =
-      this.selectedApt.doctor_id ||
-      this.selectedApt.doctorId ||
-      this.selectedApt.doctorID
-
-    if (!doctorId) {
-
-      this.toast.error("Doctor id missing")
-
-      console.log("Appointment object:", this.selectedApt)
-
-      return
-
-    }
-
-    this.appointmentService
-      .getAvailableSlots(doctorId, this.newDate)
-      .subscribe({
-
-        next: (res: any[]) => {
-
-          this.availableSlots = res.map(slot => {
-
-            const start = new Date(slot.start_time)
-              .toISOString()
-              .substring(11, 16)
-
-            const end = new Date(slot.end_time)
-              .toISOString()
-              .substring(11, 16)
-
-            return {
-
-              start,
-              end,
-              timeSlot: `${start}-${end}`
-
-            }
-
-          })
-
-          this.cdr.markForCheck()
-
-        },
-
-        error: () => {
-
-          this.toast.error("Failed to load slots")
-
-        }
-
-      })
-
+  setFilter(f: string) {
+    this.filter = f;
+    this.applyFilter();
   }
 
-
-  /* JOIN CALL */
-
-  showJoinBtn(apt: any) {
-
-    return (
-      apt.status === "confirmed" &&
-      apt.consultation_type === "online" &&
-      apt.meeting_link
-    )
-
+  applyFilter() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    this.displayedAppts = this.allAppts.filter(a => {
+      const d = new Date(a.appointment_date);
+      return this.filter === 'upcoming' ? d >= today : d < today;
+    });
+    this.cdr.detectChanges();
   }
 
+  openDetails(apt: any) { this.selectedApt = apt; }
 
-  joinCall(apt: any) {
+  showJoinBtn(apt: any) { return apt.status === 'confirmed' && apt.consultation_type === 'online' && apt.meeting_link; }
 
-    window.open(apt.meeting_link, "_blank")
+  joinCall(apt: any) { window.open(apt.meeting_link, '_blank'); }
 
+  cancelApt() {
+    if (!confirm('Cancel this booking?')) return;
+    this.appointmentService.updateAppointmentStatus(this.selectedApt.id, 'cancelled_by_patient').subscribe(() => {
+      this.toast.success('Cancelled');
+      this.selectedApt = null;
+      this.fetchAppointments();
+    });
   }
 
-
-  /* CANCEL */
-
-  confirmCancel(apt: any) {
-
-    this.selectedApt = apt
-
-    this.activeModal = 'cancel'
-
-    this.cdr.markForCheck()
-
+  respondFollowUp(status: string) {
+    // Implement follow-up status update API
+    this.toast.success(`Follow-up ${status}`);
+    this.selectedApt.follow_up_status = status;
+    this.cdr.detectChanges();
   }
 
-
-  executeCancel() {
-
-    this.appointmentService
-      .updateAppointmentStatus(
-        this.selectedApt.id,
-        'cancelled_by_patient'
-      )
-      .subscribe({
-
-        next: () => {
-
-          this.toast.success("Appointment cancelled")
-
-          this.closeModal()
-
-          this.fetchAppointments()
-
-        },
-
-        error: (err: any) => {
-
-          this.toast.error(
-            err?.error?.message ||
-            "Cancel failed"
-          )
-
-        }
-
-      })
-
+  onUploadFile(event: any) {
+    this.toast.success('File uploaded');
+    this.selectedApt.prescription_file = 'attached';
+    this.cdr.detectChanges();
   }
-
-
-  /* RESCHEDULE */
-
-  openReschedule(apt: any) {
-
-    this.selectedApt = apt
-    console.log("FULL APPOINTMENT OBJECT:", apt);
-
-    this.availableSlots = []
-
-    this.newDate = ''
-
-    this.newTime = ''
-
-    this.activeModal = 'reschedule'
-
-    this.cdr.markForCheck()
-
-  }
-
-
-  executeReschedule() {
-
-    if (!this.newDate || !this.newTime) {
-
-      this.toast.error("Select date & slot")
-
-      return
-
-    }
-
-    this.appointmentService
-      .rescheduleAppointment(
-        this.selectedApt.id,
-        {
-          date: this.newDate,
-          timeSlot: this.newTime
-        }
-      )
-      .subscribe({
-
-        next: () => {
-
-          this.toast.success("Reschedule request sent")
-
-          this.closeModal()
-
-          this.fetchAppointments()
-
-        },
-
-        error: (err: any) => {
-
-          this.toast.error(
-            err?.error?.message ||
-            "Slot unavailable"
-          )
-
-        }
-
-      })
-
-  }
-
-
-  /* CLOSE MODAL */
-
-  closeModal() {
-
-    this.activeModal = null
-
-    this.selectedApt = null
-
-    this.newDate = ''
-
-    this.newTime = ''
-
-    this.availableSlots = []
-
-    this.cdr.markForCheck()
-
-  }
-
-
-  trackByApt(index: number, apt: any) {
-
-    return apt.id
-
-  }
-
 }

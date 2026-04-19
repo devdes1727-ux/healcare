@@ -1,131 +1,69 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule],
   template: `
-    <div class="auth-page animate-fade-in">
-      <div class="auth-card glassmorphism">
-        <div class="auth-header text-center">
-          <div class="logo-box mx-auto mb-6">
-            <span class="logo">🧬</span>
-          </div>
-          <h1 class="auth-title">Forgot Password?</h1>
-          <p class="auth-subtitle">Enter your email to receive a reset token</p>
+    <div class="auth-container">
+      <div class="auth-card">
+        <h2>Reset Password</h2>
+        <p>Enter your email to receive a reset otp.</p>
+        
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" [(ngModel)]="email" placeholder="e.g. johndoe@gmail.com" />
         </div>
 
-        <form (ngSubmit)="onSubmit()" #forgotForm="ngForm" class="mt-8">
-          <div class="form-group mb-6">
-            <label class="form-label">Email Address</label>
-            <div class="input-wrapper">
-              <span class="input-icon">📧</span>
-              <input 
-                type="email" 
-                [(ngModel)]="email" 
-                name="email" 
-                required 
-                email
-                class="form-control" 
-                placeholder="doctor@healcare.com">
-            </div>
-          </div>
+        <button (click)="sendOtp()" [disabled]="isLoading">
+          {{ isLoading ? 'Sending...' : 'Send Reset Link' }}
+        </button>
 
-          <button 
-            type="submit" 
-            class="btn btn-primary btn-block py-4 mt-4" 
-            [disabled]="!forgotForm.valid || loading">
-            {{ loading ? 'Generating Token...' : 'Send Reset Token' }}
-          </button>
-        </form>
-
-        <div class="auth-footer text-center mt-8">
-          <p>Remembered? <a routerLink="/login" class="link-primary">Back to Login</a></p>
+        <div *ngIf="otpSent" class="success-box">
+           Check your email for the reset code and enter it on the next screen.
         </div>
       </div>
-
-      <div class="decorative-blob blob-1"></div>
-      <div class="decorative-blob blob-2"></div>
     </div>
   `,
   styles: [`
-    .auth-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg-secondary);
-      position: relative;
-      overflow: hidden;
-      padding: 1.5rem;
-    }
-    .auth-card {
-      width: 100%;
-      max-width: 440px;
-      padding: 3rem;
-      border-radius: 2rem;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-      z-index: 10;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    .logo-box {
-      width: 64px;
-      height: 64px;
-      background: var(--primary-color);
-      border-radius: 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 10px 15px -3px var(--primary-alpha);
-    }
-    .logo { font-size: 2rem; }
-    .auth-title { font-size: 2rem; font-weight: 800; color: var(--text-main); margin: 0; }
-    .auth-subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; }
-    
-    .form-label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px; }
-    .input-wrapper { position: relative; }
-    .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); font-size: 1.25rem; }
-    .form-control { width: 100%; padding: 1rem 1rem 1rem 3rem; border: 1.5px solid var(--border-light); border-radius: 1rem; background: var(--bg-main); transition: all 0.2s; font-family: inherit; }
-    .form-control:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 4px var(--primary-alpha); }
-    
-    .btn-block { width: 100%; }
-    .link-primary { color: var(--primary-color); font-weight: 700; text-decoration: none; }
-    .link-primary:hover { text-decoration: underline; }
-
-    .decorative-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.2; z-index: 1; }
-    .blob-1 { width: 500px; height: 500px; background: var(--primary-color); top: -100px; right: -100px; }
-    .blob-2 { width: 400px; height: 400px; background: #9333ea; bottom: -50px; left: -100px; }
-
-    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .auth-container { display: flex; align-items: center; justify-content: center; min-height: 80vh; background: #f8fafc; }
+    .auth-card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
+    h2 { margin: 0 0 10px; font-weight: 800; color: #1e293b; }
+    p { color: #64748b; margin-bottom: 30px; }
+    .form-group { text-align: left; margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+    input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; outline: none; }
+    button { width: 100%; background: #2563eb; color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+    .success-box { margin-top: 20px; background: #f0fdf4; color: #166534; padding: 15px; border-radius: 12px; font-size: 14px; }
   `]
 })
 export class ForgotPasswordComponent {
   email = '';
-  loading = false;
+  isLoading = false;
+  otpSent = false;
+  dummyToken = '';
 
-  constructor(private http: HttpClient, private toast: ToastService, private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor(private http: HttpClient, private toast: ToastService) { }
 
-  onSubmit() {
-    this.loading = true;
+  sendOtp() {
+    this.isLoading = true;
     this.http.post('http://localhost:5000/api/auth/forgot-password', { email: this.email }).subscribe({
       next: (res: any) => {
-        this.loading = false;
-        this.toast.success(`Token: ${res.token} (Demo Mode)`);
-        this.router.navigate(['/reset-password'], { queryParams: { token: res.token } });
-        this.cdr.detectChanges();
+        this.isLoading = false;
+        this.otpSent = true;
+        this.toast.success('Reset code sent to your email');
+        // Redirect to reset after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/reset-password';
+        }, 2000);
       },
-      error: (err) => {
-        this.loading = false;
-        this.toast.error(err.error?.message || 'Failed to generate token');
-        this.cdr.detectChanges();
+      error: () => {
+        this.isLoading = false;
+        this.toast.error('Email not found');
       }
     });
   }

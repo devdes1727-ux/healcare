@@ -185,6 +185,27 @@ name="clinicLocation">
 </div>
 
 
+<div class="form-field">
+<label>Treatment System</label>
+
+<div class="chip-group">
+
+<button
+type="button"
+class="chip"
+*ngFor="let system of treatmentOptions"
+[class.active]="profile.treatmentSystem.includes(system)"
+(click)="toggleTreatment(system)">
+
+{{ system }}
+
+</button>
+
+</div>
+
+</div>
+
+
 </div>
 
 </div>
@@ -204,9 +225,10 @@ name="clinicLocation">
 
 .root{
 padding:24px;
-background:#f6f8ff;
+background: var(--bg-main);
 min-height:100vh;
-font-family:Arial;
+font-family: inherit;
+color: var(--text-main);
 }
 
 .page-head{
@@ -236,11 +258,37 @@ gap:20px;
 }
 
 .card-block{
-background:white;
+background: var(--bg-card);
 padding:20px;
 border-radius:14px;
+border: 1px solid var(--border-light);
+color: var(--text-main);
+}
+.chip-group{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
 }
 
+.chip{
+padding:8px 14px;
+border-radius:20px;
+border:1px solid var(--border-light);
+background:var(--bg-main);
+cursor:pointer;
+font-size:13px;
+transition:all .2s ease;
+}
+
+.chip:hover{
+border-color:#3b5bdb;
+}
+
+.chip.active{
+background:#3b5bdb;
+color:white;
+border-color:#3b5bdb;
+}
 .block-title{
 font-size:13px;
 margin-bottom:12px;
@@ -258,14 +306,14 @@ cursor:pointer;
 width:100%;
 height:100%;
 border-radius:20px;
-background:#eef2ff;
+background: var(--bg-secondary);
 background-size:cover;
 background-position:center;
 display:flex;
 align-items:center;
 justify-content:center;
 font-size:28px;
-color:#3b5bdb;
+color: var(--primary-color);
 font-weight:bold;
 }
 
@@ -285,8 +333,10 @@ gap:14px;
 .field-input{
 padding:10px;
 border-radius:8px;
-border:1px solid #ddd;
+border:1px solid var(--border-light);
 width:100%;
+background: var(--bg-main);
+color: var(--text-main);
 }
 
 `]
@@ -296,6 +346,13 @@ width:100%;
 export class DoctorProfileComponent implements OnInit {
 
   profile: any = {};
+  treatmentOptions = [
+    'Allopathy',
+    'Siddha',
+    'Homeopathy',
+    'Ayurveda',
+    'Unani'
+  ];
 
   selectedFile: File | null = null;
 
@@ -325,7 +382,21 @@ export class DoctorProfileComponent implements OnInit {
 
   }
 
+  toggleTreatment(system: string) {
 
+    if (!this.profile.treatmentSystem) {
+      this.profile.treatmentSystem = [];
+    }
+
+    const index = this.profile.treatmentSystem.indexOf(system);
+
+    if (index > -1) {
+      this.profile.treatmentSystem.splice(index, 1);
+    } else {
+      this.profile.treatmentSystem.push(system);
+    }
+
+  }
 
   fetchProfile() {
 
@@ -363,10 +434,11 @@ export class DoctorProfileComponent implements OnInit {
 
         this.profile.clinicLocation = user.clinic_location || '';
 
+        this.profile.treatmentSystem = user.treatment_system ? user.treatment_system.split(',') : [];
+        // Sync Navbar
+        this.authService.updateUserName(this.profile.name, this.profile.profileImage);
         this.pageLoading = false;
-
         this.cdr.detectChanges();
-
       },
 
       error: () => {
@@ -402,124 +474,54 @@ export class DoctorProfileComponent implements OnInit {
     reader.readAsDataURL(file);
 
   }
-
-
-
-  saveProfile() {
-
+  saveProfile(): void {
     this.isSaving = true;
 
     const formData = new FormData();
-
-
-    formData.append(
-
-      'name',
-
-      this.profile.name
-
-    );
-
-
-    /* IMPORTANT FIX */
+    formData.append('name', this.profile.name || '');
 
     if (this.selectedFile) {
-
-      formData.append(
-
-        'profile_image',
-
-        this.selectedFile
-
-      );
-
+      formData.append('profile_image', this.selectedFile);
     }
 
-
     this.http.put(
-
       'http://localhost:5000/api/auth/profile',
-
       formData,
-
       {
-
         headers: {
-
-          Authorization:
-
-            `Bearer ${this.authService.getToken()}`
-
+          Authorization: `Bearer ${this.authService.getToken()}`
         }
-
       }
-
     ).pipe(
-
-      mergeMap((res: any) => {
-
-        if (res.user?.profile_image) {
-
-          this.profile.profileImage =
-
-            res.user.profile_image;
-
+      mergeMap((response: any) => {
+        if (response?.user?.profile_image) {
+          this.profile.profileImage = response.user.profile_image;
         }
 
         return this.doctorService.createProfile({
-
-          specialization:
-
-            this.profile.specialization,
-
-          experienceYears:
-
-            this.profile.experienceYears,
-
-          consultationFee:
-
-            this.profile.consultationFee,
-
-          clinicName:
-
-            this.profile.clinicName,
-
-          clinicLocation:
-
-            this.profile.clinicLocation
-
+          specialization: this.profile.specialization || '',
+          experienceYears: this.profile.experienceYears || 0,
+          consultationFee: this.profile.consultationFee || 0,
+          clinicName: this.profile.clinicName || '',
+          clinicLocation: this.profile.clinicLocation || '',
+          treatment_system: Array.isArray(this.profile.treatmentSystem) ? this.profile.treatmentSystem.join(',') : (this.profile.treatmentSystem || '')
         });
-
       })
-
     ).subscribe({
-
       next: () => {
-
-        this.toast.success(
-
-          "Profile updated successfully"
-
-        );
-
+        this.toast.success('Profile updated successfully');
+        // Sync Navbar
+        this.authService.updateUserName(this.profile.name, this.profile.profileImage);
         this.isSaving = false;
-
+        this.cdr.markForCheck();
       },
-
-      error: () => {
-
-        this.toast.error(
-
-          "Save failed"
-
-        );
-
+      error: (error) => {
+        console.error('Profile update error:', error);
+        this.toast.error('Failed to update profile');
         this.isSaving = false;
-
+        this.cdr.markForCheck();
       }
-
     });
-
   }
 
 }

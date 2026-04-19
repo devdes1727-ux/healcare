@@ -3,67 +3,80 @@ const { mssql, poolPromise } = require('../config/db');
 
 // CREATE SLOT
 exports.createSlot = async (req, res) => {
+    try {
+        const { availableDays, startTime, endTime, maxPatients, doctorId } = req.body;
+        // frontend should pass "availableDays" as an array, optionally passing doctorId if admin or use req.user.id
+        
+        let targetDoctorId = doctorId;
+        const pool = await poolPromise;
+
+        if (!targetDoctorId) {
+            const doctorResult = await pool.request()
+                .input('userId', mssql.Int, req.user.id)
+                .query("SELECT id FROM Doctors WHERE user_id = @userId");
+            if (!doctorResult.recordset.length) return res.status(404).json({ message: "Doctor profile not found" });
+            targetDoctorId = doctorResult.recordset[0].id;
+        }
+
+        const sTime = startTime.length === 5 ? startTime + ':00' : startTime;
+        const eTime = endTime.length === 5 ? endTime + ':00' : endTime;
+
+        const insertedSlots = [];
+        
+        // Handle single availableDay if passed instead of availableDays Array (for backward compatibility)
+        const daysToProcess = availableDays || (req.body.availableDay ? [req.body.availableDay] : []);
+
+        if (daysToProcess.length === 0) return res.status(400).json({ message: "Day(s) required" });
+
+        for (let day of daysToProcess) {
+            const overlapCheck = await pool.request()
+                .input('docId', mssql.Int, targetDoctorId)
+                .input('day', mssql.NVarChar, day)
+                .input('start', mssql.Time, sTime)
+                .input('end', mssql.Time, eTime)
+                .query(`
+                    SELECT id FROM Slots 
+                    WHERE doctor_id = @docId AND available_day = @day
+                    AND ((start_time < @end AND end_time > @start))
+                `);
+                
+            if(overlapCheck.recordset.length === 0) {
+                 const resData = await pool.request()
+                    .input('docId', mssql.Int, targetDoctorId)
+                    .input('day', mssql.NVarChar, day)
+                    .input('start', mssql.Time, sTime)
+                    .input('end', mssql.Time, eTime)
+                    .input('max', mssql.Int, maxPatients || 1)
+                    .query(`INSERT INTO Slots (doctor_id, available_day, start_time, end_time, max_patients) 
+                            OUTPUT INSERTED.* VALUES (@docId, @day, @start, @end, @max)`);
+                 insertedSlots.push(resData.recordset[0]);
+            }
+        }
+        
+        // Return first one for simple forms or the whole list for advanced forms
+        res.json(insertedSlots.length > 0 ? insertedSlots[0] : { message: "No slots added due to overlap" });
+    } catch(err) {
+        res.status(500).json({ message: "Server Error", error: err.message });
+    }
+};
+
+exports.updateSlot = async (req, res) => {
   try {
     const { availableDay, startTime, endTime, maxPatients } = req.body;
-
-    if (!availableDay || !startTime || !endTime) {
-      return res.status(400).json({
-        message: "Day, start time and end time required"
-      });
-    }
-
     const pool = await poolPromise;
-
-    // Get doctor ID
-    const doctorResult = await pool.request()
-      .input('userId', mssql.Int, req.user.id)
-      .query(`
-        SELECT id
-        FROM Doctors
-        WHERE user_id = @userId
-      `);
-
-    const doctor = doctorResult.recordset[0];
-
-    if (!doctor) {
-      return res.status(404).json({
-        message: "Doctor profile not found"
-      });
-    }
-
-
-    // Insert slot
-    // Ensure startTime/endTime have :00 for SQL Time part if only HH:mm
     const sTime = startTime.length === 5 ? startTime + ':00' : startTime;
     const eTime = endTime.length === 5 ? endTime + ':00' : endTime;
-
-    const result = await pool.request()
-      .input('doctorId', mssql.Int, doctor.id)
-      .input('day', mssql.NVarChar, availableDay)
-      .input('start', mssql.Time, sTime)
-      .input('end', mssql.Time, eTime)
-      .input('max', mssql.Int, maxPatients || 1)
-      .query(`
-        INSERT INTO Slots
-        (doctor_id, available_day, start_time, end_time, max_patients)
-
-        OUTPUT
-          INSERTED.id,
-          INSERTED.doctor_id,
-          INSERTED.available_day,
-          CONVERT(VARCHAR(5), INSERTED.start_time,108) AS start_time,
-          CONVERT(VARCHAR(5), INSERTED.end_time,108) AS end_time,
-          INSERTED.max_patients
-
-        VALUES
-        (@doctorId,@day,@start,@end,@max)
-      `);
-
-    res.json(result.recordset[0]);
-
+    await pool.request()
+        .input('id', mssql.Int, req.params.id)
+        .input('day', mssql.NVarChar, availableDay)
+        .input('start', mssql.Time, sTime)
+        .input('end', mssql.Time, eTime)
+        .input('max', mssql.Int, maxPatients || 1)
+        .query(`UPDATE Slots SET available_day = @day, start_time = @start, end_time = @end, max_patients = @max WHERE id = @id`);
+    res.json({ message: "Slot updated" });
   } catch (err) {
-    console.error("Create Slot Error:", err);
-    res.status(500).send("Server Error");
+    console.error(err);
+    res.status(500).send("Update error");
   }
 };
 

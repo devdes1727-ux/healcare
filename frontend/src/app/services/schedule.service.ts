@@ -11,23 +11,19 @@ export class ScheduleService {
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
-  private getHeaders() {
-    return new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
-  }
-
   createSlot(slotData: any): Observable<any> {
-    return this.http.post(this.apiUrl, slotData, { headers: this.getHeaders() });
+    return this.http.post(this.apiUrl, slotData);
   }
 
   getMySlots(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/my`, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/my`);
   }
 
   deleteSlot(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
   getSlotsByDoctorId(doctorId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/doctor/${doctorId}`, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/doctor/${doctorId}`);
   }
 }

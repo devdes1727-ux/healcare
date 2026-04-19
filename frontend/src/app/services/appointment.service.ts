@@ -11,44 +11,40 @@ export class AppointmentService {
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
-  private getHeaders() {
-    return new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
+  bookAppointment(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/book`, data);
   }
 
-  bookAppointment(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/book`, data, { headers: this.getHeaders() });
+  bookWalkin(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/book-walkin`, data);
   }
 
   mockPaymentSuccess(appointmentId: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/mock-payment`, { appointmentId }, { headers: this.getHeaders() });
+    return this.http.post(`${this.apiUrl}/mock-payment`, { appointmentId });
   }
 
   getPatientAppointments(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/patient`, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/patient`);
   }
 
   getDoctorAppointments(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/doctor`, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/doctor`);
   }
 
-  updateAppointmentStatus(id: number, status: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}/status`, { status }, { headers: this.getHeaders() });
+  updateAppointmentStatus(id: number, status: string, visitSummary?: string, followUpDate?: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}/status`, { status, visitSummary, followUpDate });
   }
 
   rescheduleAppointment(id: number, data: any) {
     return this.http.put(
       `${this.apiUrl}/reschedule/${id}`,
-      data,
-      { headers: this.getHeaders() }
+      data
     );
   }
 
   getAvailableSlots(doctorId: number, date: string) {
-
     return this.http.get(
-      `${this.apiUrl}/available-slots/${doctorId}/${date}`,
-      { headers: this.getHeaders() }
+      `${this.apiUrl}/available-slots/${doctorId}/${date}`
     );
-
   }
 }

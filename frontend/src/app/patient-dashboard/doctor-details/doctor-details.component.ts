@@ -736,23 +736,50 @@ export class DoctorDetailsComponent implements OnInit {
 
   }
   initiateRazorpay(res: any) {
-    const rzp = new window.Razorpay({
+
+    const options = {
       key: 'rzp_test_SHaxEvQdfSKk6c',
       amount: this.doctor.consultation_fee * 100,
       currency: 'INR',
       name: 'HealCare Platform',
       description: `Consultation with Dr. ${this.doctor.name}`,
-      method: { upi: this.selectedPayment === 'upi', card: this.selectedPayment === 'card', netbanking: this.selectedPayment === 'card' },
-      handler: () => {
-        this.appointmentService.mockPaymentSuccess(res.appointment.id).subscribe(() => {
-          this.toastService.success('Booking Confirmed!');
-          this.router.navigate(['/patient-dashboard/appointments']);
-        });
+
+      method: {
+        upi: true,
+        card: true,
+        netbanking: true,
+        wallet: true
       },
-      prefill: { name: localStorage.getItem('name') || 'Patient', email: 'patient@healcare.com' },
-      theme: { color: '#3B5BDB' }
-    });
+
+      prefill: {
+        name: localStorage.getItem('name') || 'Patient',
+        email: 'patient@healcare.com'
+      },
+
+      theme: {
+        color: '#2563eb'
+      },
+
+      handler: (response: any) => {
+
+        console.log('Payment Success:', response);
+
+        this.appointmentService.mockPaymentSuccess(res.appointment.id)
+          .subscribe(() => {
+
+            this.toastService.success(
+              'Booking Successful! Appointment Confirmed.'
+            );
+
+            this.router.navigate(['/patient-dashboard/appointments']);
+
+          });
+      }
+    };
+
+    const rzp = new window.Razorpay(options);
     rzp.open();
+
     this.booking = false;
   }
 }

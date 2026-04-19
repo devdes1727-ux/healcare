@@ -1,5 +1,4 @@
 const mssql = require('mssql/msnodesqlv8');
-require('dotenv').config();
 
 const connectionString = process.env.DB_CONNECTION_STRING;
 

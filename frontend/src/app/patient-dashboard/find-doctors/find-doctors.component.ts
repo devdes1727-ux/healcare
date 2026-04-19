@@ -572,11 +572,7 @@ export class FindDoctorsComponent implements OnInit {
         .includes(term)
 
 
-      const spec = (d.specialization || '')
-
-        .toLowerCase()
-
-        .includes(term)
+      const specMatched = (d.specialization || '').toLowerCase().includes(term) || (d.treatment_system || '').toLowerCase().includes(term)
 
 
       const location =
@@ -590,7 +586,7 @@ export class FindDoctorsComponent implements OnInit {
           .includes(loc)
 
 
-      return (name || spec) && location
+      return (name || specMatched) && location
 
     })
 

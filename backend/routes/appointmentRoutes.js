@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 
 // IMPORTANT: specific routes FIRST
 router.post('/book', auth, appointmentController.bookAppointment);
+router.post('/book-walkin', auth, appointmentController.bookWalkInAppointment);
 router.post('/mock-payment', auth, appointmentController.mockPaymentSuccess);
 
 router.get('/patient', auth, appointmentController.getPatientAppointments);

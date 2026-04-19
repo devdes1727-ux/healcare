@@ -21,5 +21,6 @@ router.put('/profile', auth, upload.single('profile_image'), authController.upda
 router.post('/change-password', auth, authController.changePassword);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
+router.post('/send-reset-otp', authController.sendResetOTP);
 
 module.exports = router;

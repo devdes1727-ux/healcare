@@ -25,9 +25,6 @@ export class AuthService {
     this.loadUserFromStorage();
   }
 
-  // =========================
-  // INIT USER (FIXED)
-  // =========================
   private loadUserFromStorage() {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
@@ -47,11 +44,8 @@ export class AuthService {
       return;
     }
 
-    // fallback: fetch from backend
     if (token) {
-      this.http.get<any>(`${this.apiUrl}/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).subscribe({
+      this.http.get<any>(`${this.apiUrl}/me`).subscribe({
         next: (res) => {
           const user: User = {
             name: res.name || 'User',
@@ -69,9 +63,6 @@ export class AuthService {
     }
   }
 
-  // =========================
-  // LOGIN
-  // =========================
   login(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, credentials).pipe(
       tap((res: any) => {
@@ -89,9 +80,6 @@ export class AuthService {
     );
   }
 
-  // =========================
-  // REGISTER
-  // =========================
   register(user: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, user).pipe(
       tap((res: any) => {
@@ -109,47 +97,31 @@ export class AuthService {
     );
   }
 
-  // =========================
-  // SAVE STORAGE (FIXED)
-  // =========================
   private saveToStorage(user: User) {
     localStorage.setItem('token', user.token || '');
     localStorage.setItem('role', user.role);
     localStorage.setItem('name', user.name);
-
     if (user.email) localStorage.setItem('email', user.email);
     if (user.profileImage) localStorage.setItem('profileImage', user.profileImage);
   }
 
-  // =========================
-  // LOGOUT
-  // =========================
   logout() {
     localStorage.clear();
     this.currentUserSubject.next(null);
   }
 
-  // =========================
-  // UPDATE NAME + IMAGE
-  // =========================
   updateUserName(name: string, profileImage?: string) {
     const current = this.currentUserSubject.value;
-
     if (!current) return;
-
     const updated: User = {
       ...current,
       name,
       profileImage: profileImage || current.profileImage
     };
-
     this.saveToStorage(updated);
     this.currentUserSubject.next(updated);
   }
 
-  // =========================
-  // HELPERS
-  // =========================
   getToken() {
     return localStorage.getItem('token');
   }
@@ -160,5 +132,9 @@ export class AuthService {
 
   getRole(): string {
     return this.currentUserSubject.value?.role || localStorage.getItem('role') || '';
+  }
+
+  getUser() {
+    return this.currentUserSubject.value;
   }
 }
