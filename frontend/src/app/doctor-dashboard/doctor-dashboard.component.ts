@@ -18,9 +18,6 @@ import { AuthService } from '../services/auth.service';
           <a routerLink="./" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
             <i class="icon-dashboard"></i> Overview
           </a>
-          <a routerLink="profile" routerLinkActive="active" class="nav-item">
-            <i class="icon-user"></i> Profile Setup
-          </a>
           <a routerLink="requests" routerLinkActive="active" class="nav-item">
             <i class="icon-users"></i> Patient Requests
           </a>

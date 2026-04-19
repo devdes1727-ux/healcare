@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { ToastService } from '../../services/toast.service';
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="auth-wrapper flex items-center justify-center">
       <div class="glass-card animate-scale-in">
@@ -113,27 +114,38 @@ export class RegisterComponent {
   loading = false;
 
   constructor(
-    private authService: AuthService, 
+    private authService: AuthService,
     private router: Router,
-    private toast: ToastService
-  ) {}
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   onSubmit() {
     this.loading = true;
-    this.authService.register({ 
-      name: this.name, 
-      email: this.email, 
-      password: this.password, 
-      role: this.role 
+    this.cdr.markForCheck();
+    this.authService.register({
+      name: this.name,
+      email: this.email,
+      password: this.password,
+      role: this.role
     }).subscribe({
       next: (res) => {
-        this.toast.success('Registration successful! Welcome to HealCare.');
-        if (this.role === 'doctor') this.router.navigate(['/doctor-dashboard']);
-        else this.router.navigate(['/patient-dashboard']);
-      },
-      error: () => {
         this.loading = false;
-        this.toast.error('Registration failed. This email may already be in use.');
+        this.cdr.markForCheck();
+        this.toast.success('Registration successful! Welcome to HealCare.');
+        if (this.role === 'doctor') {
+          this.router.navigate(['/doctor-dashboard/settings']);
+        } else {
+          this.router.navigate(['/patient-dashboard/settings']);
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.cdr.markForCheck();
+        const message =
+          err?.error?.message ||
+          'Registration failed. Please try again.';
+        this.toast.error(message);
       }
     });
   }

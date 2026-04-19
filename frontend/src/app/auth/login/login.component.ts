@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { ToastService } from '../../services/toast.service';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="auth-wrapper flex items-center justify-center">
       <div class="glass-card animate-scale-in">
@@ -120,7 +121,8 @@ export class LoginComponent {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private toast: ToastService
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   showPassword = false;
@@ -131,16 +133,21 @@ export class LoginComponent {
 
   onSubmit() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.authService.login({ email: this.email, password: this.password }).subscribe({
       next: (res) => {
+        this.loading = false;
+        this.cdr.markForCheck();
         this.toast.success(`Welcome back, ${res.name}!`);
         if (res.role === 'doctor') this.router.navigate(['/doctor-dashboard']);
         else if (res.role === 'admin') this.router.navigate(['/admin-dashboard']);
         else this.router.navigate(['/patient-dashboard']);
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
-        this.toast.error('Invalid credentials. Please try again.');
+        this.cdr.markForCheck();
+        const message = err?.error?.message || 'Invalid credentials. Please try again.';
+        this.toast.error(message);
       }
     });
   }

@@ -125,78 +125,94 @@ import { ToastService } from '../../services/toast.service';
     </div>
 
     <!-- WALK-IN MODAL -->
-    <div class="modal-backdrop" *ngIf="showWalkinModal" (click)="showWalkinModal = false">
-       <div class="modal" (click)="$event.stopPropagation()">
-          <header>
-             <h3>New Walk-in Booking</h3>
-             <button class="close" (click)="showWalkinModal = false">✕</button>
-          </header>
-          <div class="form-body">
-             <div class="input-grid">
-              <div class="input-i">
-                  <label>Patient Name</label>
-                  <input placeholder="Full Name" [(ngModel)]="walkinData.patientName" />
-              </div>
-              <div class="input-i">
-                  <label>Mobile Number</label>
-                  <input placeholder="Ex: 9876543210" [(ngModel)]="walkinData.phone" />
-              </div>
-            </div>
-             
-             <div class="input-grid">
-                 <div class="input-i">
-                    <label>Date of Birth</label>
-                    <input type="date" [(ngModel)]="walkinData.dob" (change)="calculateAge()" />
-                 </div>
-                 <div class="input-i">
-                    <label>Age</label>
-                    <input type="number" [(ngModel)]="walkinData.age" readonly placeholder="Auto-fill" />
-                 </div>
-             </div>
+   <div class="modal-backdrop" *ngIf="showWalkinModal" (click)="showWalkinModal = false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    
+    <header>
+      <h3>New Walk-in Booking</h3>
+      <button class="close" (click)="showWalkinModal = false">✕</button>
+    </header>
 
-             <div class="input-grid">
-                 <div class="input-i">
-                    <label>Gender</label>
-                    <select [(ngModel)]="walkinData.gender">
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                 </div>
-                 <div class="input-i">
-                    <label>Blood Group</label>
-                    <select [(ngModel)]="walkinData.bloodGroup">
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                    </select>
-                 </div>
-             </div>
+    <div class="form-body">
 
-             <div class="input-grid">
-              <div class="input-i">
-                  <label>Consultation Date</label>
-                  <input type="date" [(ngModel)]="walkinData.date" />
-              </div>
-              <div class="input-i">
-                  <label>Preferred Slot</label>
-                  <select [(ngModel)]="walkinData.timeSlot">
-                      <option value="">Choose Slot</option>
-                      <option *ngFor="let s of ['09:00-09:15','09:15-09:30','10:00-10:15','11:30-11:45']" [value]="s">{{s}}</option>
-                  </select>
-              </div>
-            </div>
-             <button class="btn-primary" (click)="bookWalkin()" [disabled]="isBooking">
-                {{ isBooking ? 'Booking...' : 'Confirm Booking' }}
-             </button>
-          </div>
-       </div>
+      <!-- Patient Name -->
+      <div class="input-grid">
+        <div class="input-i">
+          <label>Patient Name *</label>
+          <input placeholder="Full Name" [(ngModel)]="walkinData.patientName" />
+        </div>
+
+        <!-- Mobile -->
+        <div class="input-i">
+          <label>Mobile Number</label>
+          <input placeholder="Ex: 9876543210" [(ngModel)]="walkinData.phone" />
+        </div>
+      </div>
+
+      <!-- DOB / Age -->
+      <div class="input-grid">
+        <div class="input-i">
+          <label>Date of Birth</label>
+          <input type="date" [(ngModel)]="walkinData.dob"/>
+        </div>
+
+        <div class="input-i">
+          <label>Age *</label>
+          <input type="number" [(ngModel)]="walkinData.age"/>
+        </div>
+      </div>
+
+      <!-- Gender / Blood -->
+      <div class="input-grid">
+        <div class="input-i">
+          <label>Gender *</label>
+          <select [(ngModel)]="walkinData.gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="input-i">
+          <label>Blood Group</label>
+          <select [(ngModel)]="walkinData.bloodGroup">
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Date / Slot -->
+      <div class="input-grid">
+        <div class="input-i">
+          <label>Consultation Date *</label>
+          <input type="date" [(ngModel)]="walkinData.date" />
+        </div>
+
+        <div class="input-i">
+          <label>Preferred Slot *</label>
+          <select [(ngModel)]="walkinData.timeSlot">
+            <option value="">Choose Slot</option>
+            <option *ngFor="let s of ['09:00-09:15','09:15-09:30','10:00-10:15','11:30-11:45']" [value]="s">
+              {{s}}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-primary" (click)="bookWalkin()" [disabled]="isBooking">
+        {{ isBooking ? 'Booking...' : 'Confirm Booking' }}
+      </button>
+
     </div>
+  </div>
+</div>
   </div>
   `,
   styles: [`
@@ -305,25 +321,46 @@ export class DoctorOverviewComponent implements OnInit {
 
   refresh() {
     this.loading = true;
+
     this.appointmentService.getDoctorAppointments().subscribe({
       next: (res: any[]) => {
         const todayStr = new Date().toDateString();
-        this.upcomingAppointments = res.filter(a => a.status === 'confirmed' || a.status === 'pending');
-        this.todayCount = res.filter(a => new Date(a.appointment_date).toDateString() === todayStr).length;
-        this.completedCount = res.filter(a => a.status === 'completed').length;
-        this.totalPatients = new Set(res.map(r => r.patientId)).size;
-        this.revenue = res.filter(r => r.payment_status === 'paid').reduce((sum, r) => sum + (parseFloat(r.doctor_earnings) || 0), 0);
-
-        // Fetch doctor details for real subscription status
+        const normalized = res.map(a => ({
+          ...a,
+          patientName: a.patientName || a.patient_name || 'Walk-in Patient',
+          phone_number: a.phone_number || a.phone || '',
+          start_time: a.start_time || a.appointment_start_time,
+          patientId: a.patientId || a.patient_id || null
+        }));
+        this.upcomingAppointments = normalized.filter(
+          a => a.status === 'confirmed' || a.status === 'pending'
+        );
+        this.todayCount = normalized.filter(a =>
+          new Date(a.appointment_date).toDateString() === todayStr
+        ).length;
+        this.completedCount = normalized.filter(
+          a => a.status === 'completed'
+        ).length;
+        const patientIds = normalized
+          .map(r => r.patientId)
+          .filter(id => id !== null && id !== undefined);
+        this.totalPatients = new Set(patientIds).size;
+        this.revenue = normalized
+          .filter(r => r.payment_status === 'paid')
+          .reduce((sum, r) => sum + (parseFloat(r.doctor_earnings) || 0), 0);
         this.doctorService.getMyProfile().subscribe((doc: any) => {
           this.subscriptionStatus = doc.subscription_status || 'trial';
-          this.cdr.detectChanges();
+          this.cdr.markForCheck();
         });
-
         this.loading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: () => this.loading = false
+
+      error: (err) => {
+        console.error('Refresh error:', err);
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -345,38 +382,70 @@ export class DoctorOverviewComponent implements OnInit {
     });
   }
 
-  calculateAge() {
-    if (!this.walkinData.dob) return;
-    const birthDate = new Date(this.walkinData.dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    this.walkinData.age = age;
-  }
 
   bookWalkin() {
-    if (!this.walkinData.patientName || !this.walkinData.phone || !this.walkinData.date || !this.walkinData.timeSlot) {
+    if (
+      !this.walkinData.patientName ||
+      !this.walkinData.gender ||
+      this.walkinData.age === null ||
+      !this.walkinData.date ||
+      !this.walkinData.timeSlot
+    ) {
       this.toast.error('Please fill all required fields');
       return;
     }
+
     this.isBooking = true;
-    this.appointmentService.bookWalkin(this.walkinData).subscribe({
-      next: () => {
+    this.cdr.markForCheck();
+
+    const payload = {
+      patientName: this.walkinData.patientName,
+      age: this.walkinData.age,
+      gender: this.walkinData.gender,
+      date: this.walkinData.date,
+      timeSlot: this.walkinData.timeSlot,
+      phone: this.walkinData.phone || null,
+      bloodGroup: this.walkinData.bloodGroup || null
+    };
+
+    this.appointmentService.bookWalkin(payload).subscribe({
+      next: (res: any) => {
         this.isBooking = false;
         this.showWalkinModal = false;
-        this.toast.success('Walk-in booking confirmed');
+
+        console.log('SUCCESS RESPONSE:', res);
+
+        this.toast.success(res?.message || 'Walk-in booked successfully');
+
+        // reset form
         this.walkinData = {
-          patientName: '', phone: '', date: '', timeSlot: '',
-          dob: '', age: null, gender: 'Male', bloodGroup: 'A+'
+          patientName: '',
+          phone: '',
+          date: '',
+          timeSlot: '',
+          dob: '',
+          age: null,
+          gender: 'Male',
+          bloodGroup: 'A+'
         };
+
         this.refresh();
+        this.cdr.markForCheck();
       },
+
       error: (err) => {
         this.isBooking = false;
-        this.toast.error(err.error?.message || 'Booking failed');
+
+        console.log('ERROR RESPONSE:', err);
+
+        const msg =
+          err?.error?.message ||
+          err?.message ||
+          'Booking failed';
+
+        this.toast.error(msg);
+
+        this.cdr.markForCheck();
       }
     });
   }

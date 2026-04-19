@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -47,19 +47,48 @@ export class ResetPasswordComponent {
   newPassword = '';
   isLoading = false;
 
-  constructor(private http: HttpClient, private toast: ToastService, private router: Router) { }
+  constructor(
+    private http: HttpClient,
+    private toast: ToastService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private zone: NgZone
+  ) { }
 
   reset() {
     this.isLoading = true;
-    this.http.post('http://localhost:5000/api/auth/reset-password', { otp: this.otp, newPassword: this.newPassword }).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.toast.success('Password changed successfully');
-        this.router.navigate(['/login']);
+    this.cdr.markForCheck();
+
+    this.http.post('http://localhost:5000/api/auth/reset-password', {
+      otp: this.otp,
+      newPassword: this.newPassword
+    }).subscribe({
+      next: (res: any) => {
+        this.zone.run(() => {
+          this.isLoading = false;
+          this.toast.success(res?.message || 'Password changed successfully');
+
+          setTimeout(() => {
+            this.router.navigate(['/login']);
+          }, 300);
+
+          this.cdr.markForCheck();
+        });
       },
+
       error: (err) => {
-        this.isLoading = false;
-        this.toast.error(err.error?.message || 'Invalid otp');
+        this.zone.run(() => {
+          this.isLoading = false;
+
+          const msg =
+            err?.error?.message ||
+            err?.message ||
+            'Invalid OTP';
+
+          this.toast.error(msg);
+
+          this.cdr.markForCheck();
+        });
       }
     });
   }

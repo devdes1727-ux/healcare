@@ -1,7 +1,10 @@
 const { mssql, poolPromise } = require("../config/db");
-const bcrypt = require("bcryptjs");
 const emailService = require('../utils/EmailService');
-
+const Razorpay = require("razorpay");
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY,
+  key_secret: process.env.RAZORPAY_SECRET
+});
 /*
 ========================================
 AUTO CHECK NO-SHOW
@@ -52,7 +55,7 @@ exports.bookAppointment = async (req, res) => {
       .input("date", mssql.Date, date)
       .input("start", mssql.Time, startTime)
       .query(`SELECT id FROM Appointments WHERE doctor_id=@docId AND appointment_date=@date AND appointment_start_time=@start AND status IN ('pending','confirmed')`);
-    
+
     if (doubleBooking.recordset.length > 0) {
       return res.status(400).json({ message: "Slot already booked" });
     }
@@ -62,7 +65,7 @@ exports.bookAppointment = async (req, res) => {
       .input("docId", mssql.Int, doctorId)
       .input("date", mssql.Date, date)
       .query("SELECT id FROM LeaveDays WHERE doctor_id=@docId AND leave_date=@date");
-    
+
     if (leaveCheck.recordset.length > 0) {
       return res.status(400).json({ message: "Doctor is on leave this day" });
     }
@@ -90,9 +93,9 @@ exports.bookAppointment = async (req, res) => {
 
     // 5. Get Fee & Calculate Earnings
     const doctorData = await pool.request()
-        .input("docId", mssql.Int, doctorId)
-        .query("SELECT consultation_fee FROM Doctors WHERE id = @docId");
-    
+      .input("docId", mssql.Int, doctorId)
+      .query("SELECT consultation_fee FROM Doctors WHERE id = @docId");
+
     if (!doctorData.recordset.length) return res.status(404).json({ message: "Doctor profile not found" });
     const fee = parseFloat(doctorData.recordset[0].consultation_fee) || 0;
     const commissionAmt = type === 'online' ? (fee * 0.05) : 0;
@@ -125,8 +128,17 @@ exports.bookAppointment = async (req, res) => {
         )
       `);
 
+    const order = await razorpay.orders.create({
+      amount: fee * 100,
+      currency: "INR",
+      receipt: `appointment_${result.recordset[0].id}`
+    });
+
     res.json({
       appointment: result.recordset[0],
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
       message: "Appointment locked. Please proceed to payment."
     });
 
@@ -142,101 +154,131 @@ BOOK WALK-IN APPOINTMENT (Doctor)
 ========================================
 */
 exports.bookWalkInAppointment = async (req, res) => {
-    try {
-        const { patientName, phone, date, timeSlot, dob, age, gender, bloodGroup } = req.body;
-        if (!patientName || !phone || !date || !timeSlot) {
-            return res.status(400).json({ message: "Required fields missing" });
-        }
+  try {
+    const {
+      patientName,
+      phone,
+      age,
+      gender,
+      bloodGroup,
+      date,
+      timeSlot
+    } = req.body;
 
-        const pool = await poolPromise;
-
-        // 1. Handle Patient - Find or Update or Insert
-        let patientId;
-        const patientSearch = await pool.request()
-            .input("phone", mssql.NVarChar, phone)
-            .query("SELECT id FROM Patients WHERE phone_number = @phone");
-        
-        if (patientSearch.recordset.length > 0) {
-            patientId = patientSearch.recordset[0].id;
-            // Update missing/changed details
-            await pool.request()
-                .input("id", mssql.Int, patientId)
-                .input("dob", mssql.Date, dob || null)
-                .input("age", mssql.Int, age || null)
-                .input("gender", mssql.NVarChar, gender || null)
-                .input("bg", mssql.NVarChar, bloodGroup || null)
-                .query(`UPDATE Patients SET dob = @dob, age = @age, gender = @gender, blood_group = @bg WHERE id = @id`);
-        } else {
-            // New patient + ghost user
-            const email = phone + "@walkin.healcare.com";
-            const hashedPassword = await bcrypt.hash("walkin123", 10);
-            const userInsert = await pool.request()
-                .input("name", mssql.NVarChar, patientName)
-                .input("email", mssql.NVarChar, email)
-                .input("pass", mssql.NVarChar, hashedPassword)
-                .input("phone", mssql.NVarChar, phone)
-                .query("INSERT INTO Users(name, email, password, role, phone) OUTPUT INSERTED.id VALUES(@name, @email, @pass, 'patient', @phone)");
-            
-            const userId = userInsert.recordset[0].id;
-            const patientInsert = await pool.request()
-                .input("userId", mssql.Int, userId)
-                .input("phone", mssql.NVarChar, phone)
-                .input("dob", mssql.Date, dob || null)
-                .input("age", mssql.Int, age || null)
-                .input("gender", mssql.NVarChar, gender || null)
-                .input("bg", mssql.NVarChar, bloodGroup || null)
-                .query("INSERT INTO Patients(user_id, phone_number, dob, age, gender, blood_group) OUTPUT INSERTED.id VALUES(@userId, @phone, @dob, @age, @gender, @bg)");
-            
-            patientId = patientInsert.recordset[0].id;
-        }
-
-        // 2. Get Doctor Info
-        const doctorResult = await pool.request()
-            .input("userId", mssql.Int, req.user.id)
-            .query("SELECT id, consultation_fee FROM Doctors WHERE user_id = @userId");
-        
-        if (!doctorResult.recordset.length) return res.status(403).json({ message: "Doctor profile not found" });
-        const doc = doctorResult.recordset[0];
-        const fee = parseFloat(doc.consultation_fee) || 0;
-
-        // 3. Prevent Double Booking
-        const [startRaw, endRaw] = timeSlot.split("-");
-        const startTime = startRaw.trim().length === 5 ? startRaw.trim() + ":00" : startRaw.trim();
-        const endTime = endRaw.trim().length === 5 ? endRaw.trim() + ":00" : endRaw.trim();
-
-        const doubleBooking = await pool.request()
-            .input("docId", mssql.Int, doc.id)
-            .input("date", mssql.Date, date)
-            .input("start", mssql.Time, startTime)
-            .query(`SELECT id FROM Appointments WHERE doctor_id=@docId AND appointment_date=@date AND appointment_start_time=@start AND status IN ('pending','confirmed')`);
-        
-        if (doubleBooking.recordset.length > 0) return res.status(400).json({ message: "Slot already booked" });
-
-        // 4. Insert Appointment
-        const result = await pool.request()
-            .input("doctorId", mssql.Int, doc.id)
-            .input("patientId", mssql.Int, patientId)
-            .input("date", mssql.Date, date)
-            .input("startTime", mssql.Time, startTime)
-            .input("endTime", mssql.Time, endTime)
-            .input("fee", mssql.Decimal(10, 2), fee)
-            .query(`
-                INSERT INTO Appointments(
-                    doctor_id, patient_id, appointment_date, appointment_start_time, appointment_end_time, 
-                    consultation_type, status, payment_status, booked_by, commission_amt, doctor_earnings, total_amount, appointment_source
-                )
-                OUTPUT INSERTED.*
-                VALUES(
-                    @doctorId, @patientId, @date, @startTime, @endTime, 
-                    'offline', 'confirmed', 'paid', 'doctor', 0, @fee, @fee, 'walkin'
-                )
-            `);
-
-        res.json({ message: "Walk-in created", appointment: result.recordset[0] });
-    } catch (err) {
-        console.error("Walk-in booking error:", err);
-        res.status(500).json({ message: "Walk-in booking error", error: err.message });
+    // Required validation
+    if (!patientName || !age || !gender || !date || !timeSlot) {
+      return res.status(400).json({ message: "Required fields missing" });
     }
+
+    const pool = await poolPromise;
+
+    // Get doctor
+    const doctorResult = await pool.request()
+      .input("userId", mssql.Int, req.user.id)
+      .query(`
+        SELECT id, consultation_fee 
+        FROM Doctors 
+        WHERE user_id = @userId
+      `);
+
+    if (!doctorResult.recordset.length) {
+      return res.status(403).json({ message: "Doctor profile not found" });
+    }
+
+    const doctor = doctorResult.recordset[0];
+    const fee = parseFloat(doctor.consultation_fee) || 0;
+
+    // Clean slot
+    const cleanSlot = timeSlot.replace(/\s/g, "");
+    const [startRaw, endRaw] = cleanSlot.split("-");
+
+    const startTime = startRaw.length === 5 ? startRaw + ":00" : startRaw;
+    const endTime = endRaw.length === 5 ? endRaw + ":00" : endRaw;
+
+    // Prevent double booking
+    const check = await pool.request()
+      .input("doctorId", mssql.Int, doctor.id)
+      .input("date", mssql.Date, date)
+      .input("start", mssql.Time, startTime)
+      .query(`
+        SELECT id 
+        FROM WalkInAppointments
+        WHERE doctor_id = @doctorId
+        AND appointment_date = @date
+        AND appointment_start_time = @start
+        AND status IN ('pending','confirmed')
+      `);
+
+    if (check.recordset.length > 0) {
+      return res.status(400).json({ message: "Slot already booked" });
+    }
+
+    // Insert into WALK-IN TABLE ONLY
+    const result = await pool.request()
+      .input("doctorId", mssql.Int, doctor.id)
+      .input("patientName", mssql.NVarChar, patientName)
+      .input("phone", mssql.NVarChar, phone || null)
+      .input("age", mssql.Int, age)
+      .input("gender", mssql.NVarChar, gender)
+      .input("bloodGroup", mssql.NVarChar, bloodGroup || null)
+      .input("date", mssql.Date, date)
+      .input("startTime", mssql.Time, startTime)
+      .input("endTime", mssql.Time, endTime)
+      .input("fee", mssql.Decimal(10, 2), fee)
+      .query(`
+        INSERT INTO WalkInAppointments (
+          doctor_id,
+          patient_name,
+          phone_number,
+          age,
+          gender,
+          blood_group,
+          appointment_date,
+          appointment_start_time,
+          appointment_end_time,
+          consultation_type,
+          status,
+          payment_status,
+          booked_by,
+          commission_amt,
+          doctor_earnings,
+          total_amount,
+          appointment_source
+        )
+        OUTPUT INSERTED.*
+        VALUES (
+          @doctorId,
+          @patientName,
+          @phone,
+          @age,
+          @gender,
+          @bloodGroup,
+          @date,
+          @startTime,
+          @endTime,
+          'offline',
+          'confirmed',
+          'paid',
+          'doctor',
+          0,
+          @fee,
+          @fee,
+          'walkin'
+        )
+      `);
+
+    res.json({
+      message: "Walk-in appointment created successfully",
+      appointment: result.recordset[0]
+    });
+
+  } catch (err) {
+    console.error("Walk-in error:", err);
+    res.status(500).json({
+      message: "Walk-in booking failed",
+      error: err.message
+    });
+  }
 };
 
 /*
@@ -272,12 +314,12 @@ exports.mockPaymentSuccess = async (req, res) => {
 
     // Trigger confirmation email
     await emailService.sendBookingConfirmation('patient@healcare.com', {
-        patientName: 'Valued Patient',
-        doctorName: 'Specialist',
-        date: updatedApt.appointment_date,
-        startTime: updatedApt.appointment_start_time,
-        endTime: updatedApt.appointment_end_time,
-        type: updatedApt.consultation_type
+      patientName: 'Valued Patient',
+      doctorName: 'Specialist',
+      date: updatedApt.appointment_date,
+      startTime: updatedApt.appointment_start_time,
+      endTime: updatedApt.appointment_end_time,
+      type: updatedApt.consultation_type
     });
 
     res.json(updatedApt);
@@ -296,23 +338,92 @@ exports.getDoctorAppointments = async (req, res) => {
   try {
     const pool = await poolPromise;
     await autoCheckNoShow(pool);
-    const result = await pool.request()
+
+    const onlineAppointments = await pool.request()
       .input("userId", mssql.Int, req.user.id)
       .query(`
         SELECT
-          a.*,
+          a.id,
+          a.doctor_id,
+          a.patient_id,
+          a.appointment_date,
+          a.consultation_type,
+          a.status,
+          a.payment_status,
+          a.meeting_link,
+          a.appointment_start_time,
+          a.appointment_end_time,
+          a.booked_by,
+          a.commission_amt,
+          a.doctor_earnings,
+          a.total_amount,
+          a.appointment_source,
+
           CONVERT(VARCHAR(5), a.appointment_start_time, 108) AS start_time,
           CONVERT(VARCHAR(5), a.appointment_end_time, 108) AS end_time,
-          p.age, p.gender, p.phone_number, p.address,
-          u.name AS patientName, u.email AS patientEmail, u.profile_image AS patientImage
+
+          p.age,
+          p.gender,
+          p.phone_number,
+          p.address,
+          u.name AS patientName,
+          u.email AS patientEmail,
+          u.profile_image AS patientImage
         FROM Appointments a
         JOIN Doctors d ON a.doctor_id = d.id
         JOIN Patients p ON a.patient_id = p.id
         JOIN Users u ON p.user_id = u.id
         WHERE d.user_id = @userId
-        ORDER BY a.appointment_date DESC, a.appointment_start_time ASC
       `);
-    res.json(result.recordset);
+
+    const walkinAppointments = await pool.request()
+      .input("userId", mssql.Int, req.user.id)
+      .query(`
+        SELECT
+          w.id,
+          w.doctor_id,
+          NULL AS patient_id,
+          w.appointment_date,
+          w.consultation_type,
+          w.status,
+          w.payment_status,
+          NULL AS meeting_link,
+          w.appointment_start_time,
+          w.appointment_end_time,
+          w.booked_by,
+          w.commission_amt,
+          w.doctor_earnings,
+          w.total_amount,
+          w.appointment_source,
+
+          CONVERT(VARCHAR(5), w.appointment_start_time, 108) AS start_time,
+          CONVERT(VARCHAR(5), w.appointment_end_time, 108) AS end_time,
+
+          w.age,
+          w.gender,
+          w.phone_number,
+          NULL AS address,
+          w.patient_name AS patientName,
+          NULL AS patientEmail,
+          NULL AS patientImage
+        FROM WalkInAppointments w
+        JOIN Doctors d ON w.doctor_id = d.id
+        WHERE d.user_id = @userId
+      `);
+
+    // 🔥 MERGE BOTH
+    const result = [
+      ...onlineAppointments.recordset,
+      ...walkinAppointments.recordset
+    ];
+
+    // sort by date/time
+    result.sort((a, b) =>
+      new Date(b.appointment_date) - new Date(a.appointment_date)
+    );
+
+    res.json(result);
+
   } catch (err) {
     console.error(err);
     res.status(500).send("Doctor appointments error");
@@ -433,7 +544,7 @@ exports.getAvailableSlots = async (req, res) => {
       .input("doctorId", mssql.Int, doctorId)
       .input("date", mssql.Date, date)
       .query("SELECT id FROM LeaveDays WHERE doctor_id = @doctorId AND leave_date = @date");
-    
+
     if (leaveCheck.recordset.length > 0) return res.json([]);
 
     // 2. Get All Slots for that day
@@ -441,13 +552,13 @@ exports.getAvailableSlots = async (req, res) => {
       .input("doctorId", mssql.Int, doctorId)
       .input("day", mssql.NVarChar, selectedDay)
       .query(`SELECT id, start_time, end_time FROM Slots WHERE doctor_id=@doctorId AND available_day=@day`);
-    
+
     // 3. Get Booked Appointments for that day
     const booked = await pool.request()
       .input("doctorId", mssql.Int, doctorId)
       .input("date", mssql.Date, date)
       .query(`SELECT appointment_start_time FROM Appointments WHERE doctor_id=@doctorId AND appointment_date=@date AND status IN ('pending','confirmed')`);
-    
+
     const bookedTimes = booked.recordset.map(b => b.appointment_start_time.toISOString().split('T')[1].substring(0, 5));
 
     // 4. Filter Available Slots

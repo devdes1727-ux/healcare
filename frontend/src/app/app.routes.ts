@@ -47,12 +47,6 @@ export const routes: Routes = [
             .then(m => m.DoctorOverviewComponent)
       },
       {
-        path: 'profile',
-        loadComponent: () =>
-          import('./doctor-dashboard/profile/doctor-profile.component')
-            .then(m => m.DoctorProfileComponent)
-      },
-      {
         path: 'requests',
         loadComponent: () =>
           import('./doctor-dashboard/patient-requests/patient-requests.component')
@@ -75,7 +69,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./patient-dashboard/find-doctors/find-doctors.component')
             .then(m => m.FindDoctorsComponent)
-      },
+      }
     ]
   },
 

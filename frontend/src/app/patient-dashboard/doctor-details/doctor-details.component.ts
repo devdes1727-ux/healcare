@@ -679,20 +679,17 @@ export class DoctorDetailsComponent implements OnInit {
 
   confirmBooking() {
 
-    // ✅ check slot first
     if (!this.selectedSlot) {
       this.toastService.error('Please select a time slot');
       return;
     }
 
-    // ✅ build slot range safely (HH:mm-HH:mm)
     const slotRange =
       this.selectedSlot.start_time.substring(0, 5)
       + '-'
       + this.selectedSlot.end_time.substring(0, 5);
 
 
-    // ✅ prevent double-click booking
     if (this.booking) return;
 
     this.booking = true;
@@ -715,7 +712,6 @@ export class DoctorDetailsComponent implements OnInit {
             return;
           }
 
-          // ✅ move to payment
           this.initiateRazorpay(res);
 
         },
@@ -738,10 +734,17 @@ export class DoctorDetailsComponent implements OnInit {
   initiateRazorpay(res: any) {
 
     const options = {
+
       key: 'rzp_test_SHaxEvQdfSKk6c',
-      amount: this.doctor.consultation_fee * 100,
-      currency: 'INR',
+
+      order_id: res.order_id,
+
+      amount: res.amount,
+
+      currency: res.currency,
+
       name: 'HealCare Platform',
+
       description: `Consultation with Dr. ${this.doctor.name}`,
 
       method: {
@@ -749,6 +752,25 @@ export class DoctorDetailsComponent implements OnInit {
         card: true,
         netbanking: true,
         wallet: true
+      },
+
+      config: {
+        display: {
+          blocks: {
+            upi: {
+              name: "Pay via UPI ID",
+              instruments: [
+                {
+                  method: "upi"
+                }
+              ]
+            }
+          },
+          sequence: ["block.upi"],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
       },
 
       prefill: {
@@ -762,18 +784,20 @@ export class DoctorDetailsComponent implements OnInit {
 
       handler: (response: any) => {
 
-        console.log('Payment Success:', response);
-
-        this.appointmentService.mockPaymentSuccess(res.appointment.id)
+        this.appointmentService
+          .mockPaymentSuccess(res.appointment.id)
           .subscribe(() => {
 
             this.toastService.success(
               'Booking Successful! Appointment Confirmed.'
             );
 
-            this.router.navigate(['/patient-dashboard/appointments']);
+            this.router.navigate(
+              ['/patient-dashboard/appointments']
+            );
 
           });
+
       }
     };
 

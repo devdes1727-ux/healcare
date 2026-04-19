@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../services/toast.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-forgot-password',
@@ -45,25 +46,46 @@ export class ForgotPasswordComponent {
   email = '';
   isLoading = false;
   otpSent = false;
-  dummyToken = '';
 
-  constructor(private http: HttpClient, private toast: ToastService) { }
+  constructor(
+    private http: HttpClient,
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef,
+    private router: Router
+  ) { }
 
   sendOtp() {
     this.isLoading = true;
-    this.http.post('http://localhost:5000/api/auth/forgot-password', { email: this.email }).subscribe({
+    this.cdr.markForCheck();
+
+    this.http.post('http://localhost:5000/api/auth/forgot-password', {
+      email: this.email
+    }).subscribe({
       next: (res: any) => {
         this.isLoading = false;
         this.otpSent = true;
-        this.toast.success('Reset code sent to your email');
-        // Redirect to reset after 2 seconds
+
+        const message = res?.message || 'Reset code sent to your email';
+        this.toast.success(message);
+
+        this.cdr.markForCheck();
+
         setTimeout(() => {
-          window.location.href = '/reset-password';
-        }, 2000);
+          this.router.navigate(['/reset-password']);
+        }, 1500);
       },
-      error: () => {
+
+      error: (err) => {
         this.isLoading = false;
-        this.toast.error('Email not found');
+
+        const message =
+          err?.error?.message ||
+          err?.message ||
+          'Something went wrong';
+
+        this.toast.error(message);
+
+        this.cdr.markForCheck();
       }
     });
   }
