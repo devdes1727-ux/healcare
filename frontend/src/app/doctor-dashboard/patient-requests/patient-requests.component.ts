@@ -602,10 +602,30 @@ export class PatientRequestsComponent implements OnInit {
   selectRequest(req: any) { this.selectedRequest = req; }
 
   updateStatus(id: number, status: string) {
-    this.appointmentService.updateAppointmentStatus(id, status).subscribe({
-      next: () => { this.toast.success(`Status updated: ${status}`); this.fetchRequests(); },
-      error: () => this.toast.error('Update failed')
+
+    const source = this.selectedRequest.appointment_source;
+
+    this.appointmentService.updateAppointmentStatus(
+      id,
+      status,
+      source
+    ).subscribe({
+
+      next: () => {
+
+        this.toast.success(`Status updated: ${status}`);
+        this.fetchRequests();
+
+      },
+
+      error: () => {
+
+        this.toast.error('Update failed');
+
+      }
+
     });
+
   }
 
   confirmDecline(id: number) { this.requestToDecline = id; this.showConfirmModal = true; }

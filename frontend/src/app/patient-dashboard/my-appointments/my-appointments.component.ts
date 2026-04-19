@@ -215,12 +215,23 @@ export class MyAppointmentsComponent implements OnInit {
   joinCall(apt: any) { window.open(apt.meeting_link, '_blank'); }
 
   cancelApt() {
+
     if (!confirm('Cancel this booking?')) return;
-    this.appointmentService.updateAppointmentStatus(this.selectedApt.id, 'cancelled_by_patient').subscribe(() => {
+
+    this.appointmentService.updateAppointmentStatus(
+      this.selectedApt.id,
+      'cancelled_by_patient',
+      this.selectedApt.appointment_source
+    ).subscribe(() => {
+
       this.toast.success('Cancelled');
+
       this.selectedApt = null;
+
       this.fetchAppointments();
+
     });
+
   }
 
   respondFollowUp(status: string) {

@@ -451,9 +451,15 @@ export class DoctorOverviewComponent implements OnInit {
   }
 
   markComplete(apt: any) {
-    this.appointmentService.updateAppointmentStatus(apt.id, 'completed').subscribe(() => {
+    this.appointmentService.updateAppointmentStatus(
+      apt.id,
+      'completed',
+      apt.appointment_source
+    ).subscribe(() => {
+
       this.toast.success('Consultation completed');
       this.refresh();
+
     });
   }
 

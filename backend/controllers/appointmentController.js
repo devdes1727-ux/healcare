@@ -467,28 +467,134 @@ exports.getPatientAppointments = async (req, res) => {
 UPDATE APPOINTMENT STATUS (Doctor)
 ========================================
 */
+
 exports.updateAppointmentStatus = async (req, res) => {
+
   try {
+
     const { id } = req.params;
-    const { status, visitSummary, followUpDate } = req.body;
+
+    const {
+      status,
+      appointment_source
+    } = req.body;
+
+
+    // Validate source
+
+    if (!appointment_source) {
+
+      return res.status(400).json({
+        message: "appointment_source required"
+      });
+
+    }
+
+
     const pool = await poolPromise;
-    const result = await pool.request()
-      .input("id", mssql.Int, id)
-      .input("status", mssql.NVarChar, status)
-      .input("summary", mssql.NVarChar, visitSummary || null)
-      .input("followUp", mssql.Date, followUpDate || null)
-      .query(`
-        UPDATE Appointments
-        SET status=@status, visit_summary=@summary, follow_up_date=@followUp, 
-            follow_up_status = CASE WHEN @followUp IS NOT NULL THEN 'pending' ELSE 'none' END
-        OUTPUT INSERTED.*
-        WHERE id=@id
-      `);
+
+    let result;
+
+
+    /*
+    ================================
+    WALK-IN APPOINTMENT UPDATE
+    ================================
+    */
+
+    if (appointment_source === "walkin") {
+
+      result = await pool.request()
+
+        .input("id", mssql.Int, id)
+
+        .input("status", mssql.NVarChar, status)
+
+        .query(`
+          UPDATE WalkInAppointments
+          SET status = @status
+          OUTPUT INSERTED.*
+          WHERE id = @id
+        `);
+
+    }
+
+
+    /*
+    ================================
+    ONLINE APPOINTMENT UPDATE
+    ================================
+    */
+
+    else if (appointment_source === "online") {
+
+      result = await pool.request()
+
+        .input("id", mssql.Int, id)
+
+        .input("status", mssql.NVarChar, status)
+
+        .query(`
+          UPDATE Appointments
+          SET status = @status
+          OUTPUT INSERTED.*
+          WHERE id = @id
+        `);
+
+    }
+
+
+    /*
+    ================================
+    INVALID SOURCE
+    ================================
+    */
+
+    else {
+
+      return res.status(400).json({
+        message: "Invalid appointment_source"
+      });
+
+    }
+
+
+    /*
+    ================================
+    NOT FOUND CHECK
+    ================================
+    */
+
+    if (!result.recordset.length) {
+
+      return res.status(404).json({
+        message: "Appointment not found"
+      });
+
+    }
+
+
+    /*
+    ================================
+    SUCCESS RESPONSE
+    ================================
+    */
+
     res.json(result.recordset[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Update status error");
+
   }
+
+  catch (err) {
+
+    console.error("Update status error:", err);
+
+    res.status(500).json({
+      message: "Update status failed",
+      error: err.message
+    });
+
+  }
+
 };
 
 /*

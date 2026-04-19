@@ -31,8 +31,24 @@ export class AppointmentService {
     return this.http.get(`${this.apiUrl}/doctor`);
   }
 
-  updateAppointmentStatus(id: number, status: string, visitSummary?: string, followUpDate?: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}/status`, { status, visitSummary, followUpDate });
+  updateAppointmentStatus(
+    id: number,
+    status: string,
+    appointment_source: string,
+    visitSummary?: string,
+    followUpDate?: string
+  ): Observable<any> {
+
+    return this.http.put(
+      `${this.apiUrl}/${id}/status`,
+      {
+        status,
+        appointment_source,
+        visitSummary,
+        followUpDate
+      }
+    );
+
   }
 
   rescheduleAppointment(id: number, data: any) {
